@@ -11,5 +11,7 @@
 		"GitHub.codespaces",
 		"GitHub.copilot",
 		"GitHub.copilot-chat",
+		"openai.chatgpt",
+		"anthropic.claude-code",
 	]
 }
