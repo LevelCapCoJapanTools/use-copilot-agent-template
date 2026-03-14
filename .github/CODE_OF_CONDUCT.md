@@ -51,4 +51,4 @@
 
 ## 属性
 
-この行動規範は[Contributor Covenant](https://www.contributor-covenant.org)、バージョン 2.0、(https://www.contributor-covenant.org/version/2/0/code_of_conduct.html)から適応されました。
+この行動規範は[Contributor Covenant](https://www.contributor-covenant.org)、バージョン 2.0、(<https://www.contributor-covenant.org/version/2/0/code_of_conduct.html>)から適応されました。
