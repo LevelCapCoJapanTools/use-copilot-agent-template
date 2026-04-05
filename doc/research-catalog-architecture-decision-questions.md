@@ -1,6 +1,12 @@
-# SSOT / Skills / MCP カタログ細分化に伴う設計判断用の質問集
+# SSOT / Skills / MCP カタログ細分化における設計判断用の質問集
 
 このドキュメントは、`docs/ssot-distribution-system-spec-final-2026-04-04.md` と Issue コメントで示された 12 分割案を突き合わせ、DESIGN Issue に渡す前に決めるべき質問を整理したものである。
+
+## 用語の前置き
+
+- `ssot-catalog`: `docs/ssot-distribution-system-spec-final-2026-04-04.md` で使われている既存の SSOT catalog repo の呼び名を指す。今回の論点は、この既存 repo を `ssot-core` / `ssot-schema` / `ssot-policies` に細分化するかどうかである。
+- 上書き競合: 複数の catalog repo が同じ target path へ配付を試み、後から処理された内容が先の内容を上書きしてしまう状態を指す。
+- 索引リポジトリ: target repo へ直接コピーする実体ではなく、一覧、互換表、推奨組み合わせのような判断材料を管理する repo を指す。
 
 ## 質問1: `ssot-core` / `ssot-schema` / `ssot-policies` を本当に物理 repo として分けるか
 
@@ -9,8 +15,8 @@
 #### 問題
 今の仕様では SSOT は `ssot-catalog` の中でセットごとにまとめる前提になっている。  
 一方で 12 分割案では `ssot-core`、`ssot-schema`、`ssot-policies` を別 repo にしたい。  
-でも SSOT は `AGENTS.md`、`.github/copilot-instructions.md`、`.github/instructions/**` のように、同じ場所へ置きたいファイルが多い。  
-このまま 3 つに分けると、3 台の配送トラックが同じ棚に別々の荷物を置きに来る状態になり、どれが最後に残るかが分かりにくい。
+でも SSOT は `AGENTS.md`、`.github/copilot-instructions.md`、`.github/instructions/**` のように、最終的に target repo のルート直下や `.github/` 配下へ置きたいファイルが多い。  
+このまま 3 つに分けると、複数の repo が同じ target path へ配付を試みるため、後勝ちで上書きされる可能性がある。
 
 #### 何が何に影響するか
 この判断は `ssot-sync-controller` の単純さと、target repo の `.github/` 直下の安定性に影響する。  
@@ -22,7 +28,7 @@
 | 選択肢 | 内容 | 特徴 |
 | ---------- | -------- | ---- |
 | ① SSOT は 1 repo のままにし、repo 内を `core/` `schema/` `policies/` に論理分割する（推奨） | 物理 repo は増やさず、SSOT の中だけを整理する | 今の配付仕様と衝突しにくい |
-| ② `ssot-core` / `ssot-schema` / `ssot-policies` を別 repo にする | 役割ごとに完全分離する | 同一パス衝突と version 組み合わせ問題が増える |
+| ② `ssot-core` / `ssot-schema` / `ssot-policies` を別 repo にする | 役割ごとに完全分離する | 同一パス衝突と、複数 repo のバージョン互換性管理が複雑になりやすい |
 | ③ `ssot-core` だけ配付 repo にして、`ssot-schema` と `ssot-policies` は参照専用 repo にする | 一部だけ物理分割する | 折衷案だが、運用ルールがやや複雑になる |
 
 #### 推奨
@@ -31,7 +37,8 @@
 ##### 理由
 - 現行仕様の「catalog path をそのまま target repo へコピーする」と最も整合する。
 - `ssot-sync-controller` に新しい依存解決や衝突検知を持ち込まずに済む。
-- SSOT は全 AI 共通の基盤なので、まずは物理分割よりも「上書き不能であること」を優先した方が安全である。
+- SSOT は全 AI 共通の基盤なので、同じ target path を複数 repo から配らない構造を優先した方が安全である。
+- 1 repo 内の論理分割なら、repo 間の上書き競合、つまり後から来た配付内容が先の内容を消してしまう状態を避けやすい。
 
 ## 質問2: catalog の物理分割ルールを「役割単位」に広げるか、「path / 権限境界単位」に限定するか
 
@@ -40,7 +47,7 @@
 #### 問題
 今の仕様では、Skills と MCP は「target repo で置き場所が違うなら物理 repo を分ける」と決めている。  
 12 分割案では、置き場所が同じでも「役割が違うから分ける」という考え方が入っている。  
-つまり「ファイルをどこへ置くか」で分けるのか、「何の仕事か」で分けるのか、分割のものさしが 2 本になっている。
+つまり「ファイルをどこへ置くか」で分けるのか、「何の仕事か」で分けるのか、分割基準が 2 つ存在している。
 
 #### 何が何に影響するか
 この判断は `skills-core`、`skills-provider`、`mcp-tools` などの repo 数だけでなく、衝突の起きやすさにも影響する。  
@@ -60,7 +67,7 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 
 ##### 理由
 - 現行仕様の「path 差分がある場合は物理 repo を分離する必要がある」という前提をそのまま使える。
-- 「同じ path に届くなら同じ配送単位にまとめる」という方が、後勝ち事故を防ぎやすい。
+- 「同じ path に届くなら同じ配送単位にまとめる」という方が、同一パスへの複数配付による上書き競合を防ぎやすい。
 - 役割の見通しは `catalog.yml` や README などの metadata で補えるため、物理分割に無理に載せる必要がない。
 
 ## 質問3: `skills-provider` と `adapter-layer` の境界をどこで切るか
@@ -71,7 +78,7 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 `skills-provider` は AWS / Azure / Sakura の差分を扱いたい。  
 `adapter-layer` は OS や実行環境の差分を吸収したい。  
 でも実際には「Sakura 上で Bash と PowerShell の違いを吸収してデプロイする」ような場面では、provider 差分と adapter 差分が混ざりやすい。  
-この 2 つの引き出しの境目があいまいだと、同じ処理が別 repo に重複する。
+この 2 つの責務領域の境目があいまいだと、同じ処理が別 repo に重複する。
 
 #### 何が何に影響するか
 この判断は `skills-provider`、`adapter-layer`、`infra-runtime` の責務分担に影響する。  
@@ -99,25 +106,25 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 ### 未確定事項
 
 #### 問題
-12 分割案では `skills-core` は「できること」、`mcp-tools` は「tool 定義」と書かれている。  
+12 分割案では `skills-core` は「複数の tool を組み合わせた業務レベルの能力」、`mcp-tools` は「単一の基本操作を提供する tool 定義」と読める。  
 でも実際には `shell`、`file`、`http` のような tool を組み合わせると、そのまま skill のように見える。  
 境界がないままだと、「ファイルを読む」は skill なのか tool なのか、「AWS の状態確認」は skill なのか tool なのかが毎回ぶれる。
 
 #### 何が何に影響するか
 この判断は `mcp-server-core` の API 設計と、`skills-core` の再利用単位に影響する。  
 もし `mcp-tools` が高級機能まで持つと、skill は薄いラッパーになり、責務が逆転する。  
-逆に `skills-*` を業務単位、`mcp-tools` を原始操作単位に固定すれば、依存方向をきれいに保てる。
+逆に `skills-*` を業務単位、`mcp-tools` を基本操作単位に固定すれば、依存方向をきれいに保てる。
 
 ### 選択肢
 
 | 選択肢 | 内容 | 特徴 |
 | ---------- | -------- | ---- |
-| ① `mcp-tools` は原始操作、`skills-*` は複数 tool を束ねた利用者向け能力に限定する（推奨） | 低レベルと高レベルを分離する | 依存方向が明確 |
+| ① `mcp-tools` は基本操作、`skills-*` は複数 tool を束ねた利用者向け能力に限定する（推奨） | 低レベルと高レベルを分離する | 依存方向が明確 |
 | ② provider ごとの操作も `mcp-tools` に含める | tool 側に機能を寄せる | skill の存在意義が薄くなる |
 | ③ `skills-*` をなくして `mcp-tools` だけで表現する | 構造は単純になる | 使い方の意味づけが弱くなる |
 
 #### 推奨
-① `mcp-tools` は原始操作、`skills-*` は複数 tool を束ねた利用者向け能力に限定する
+① `mcp-tools` は基本操作、`skills-*` は複数 tool を束ねた利用者向け能力に限定する
 
 ##### 理由
 - `mcp-server-core` は「安全に呼び出せる部品」を提供し、skill は「部品の使い方」を表す方が自然である。
@@ -132,6 +139,7 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 `infra-runtime` は「実行環境・デプロイ・secret」を扱う想定になっている。  
 でも今の配付方式は catalog の中身をそのまま target repo にコピーする方式である。  
 この方式で secret まで repo に配るのは危険で、そもそもやってはいけない。  
+公開 repo や共有 repo なら機密情報が見えてしまうし、Git 履歴に残ると後から完全に消すのも難しい。  
 つまり `infra-runtime` に入れてよいものと、絶対に入れてはいけないものを先に決める必要がある。
 
 #### 何が何に影響するか
@@ -174,17 +182,18 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 
 | 選択肢 | 内容 | 特徴 |
 | ---------- | -------- | ---- |
-| ① `skill-catalog` は metadata 専用のメタレジストリにし、target repo へは配らない（推奨） | 設計判断の索引として使う | 実行時責務を増やさない |
+| ① `skill-catalog` は metadata 専用の索引リポジトリにし、target repo へは配らない（推奨） | 設計判断の索引として使う | 実行時責務を増やさない |
 | ② `skill-catalog` を配付 repo として扱い、複合セットを直接 target repo に配る | 入口を 1 つにまとめやすい | セット依存に近い処理が必要になる |
 | ③ `skill-catalog` を廃止し、情報を `skills-core` に寄せる | 構成は減る | `skills-core` の責務が太くなる |
 
 #### 推奨
-① `skill-catalog` は metadata 専用のメタレジストリにし、target repo へは配らない
+① `skill-catalog` は metadata 専用の索引リポジトリにし、target repo へは配らない
 
 ##### 理由
 - `skill-catalog` を配付対象にしないことで、`ssot-sync-controller` に新しい解決ロジックを足さずに済む。
 - version 互換表や推奨セット一覧は、DESIGN Issue の判断材料として持つ方が使いやすい。
 - 「実行するもの」と「選ぶための情報」を分けることで、実行時責務と定義時責務を分離できる。
+- もし metadata 専用に寄せるなら、命名変更は別の設計判断事項として切り出し、`skill-catalog` のまま続けるかを別途決めた方が論点を混ぜにくい。
 
 ## 質問7: include 基準を `set.yml` 相対に統一するか、層ごとに別ルールを残すか
 
@@ -193,7 +202,7 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 #### 問題
 今の仕様では SSOT は `set.yml` からの相対パス、Skills / MCP は catalog ルート基準になっている。  
 これだけでも少し覚えにくいのに、12 分割で repo が増えると、どの repo がどの書き方かを毎回考えることになる。  
-地図の縮尺が箱ごとに違う状態なので、書く人が間違えやすい。
+パス解決の基準が repo ごとに異なる状態なので、書く人が間違えやすい。
 
 #### 何が何に影響するか
 この判断は set 定義を書く人のミス率と、`ssot-sync-controller` の include 展開実装に影響する。  
@@ -251,7 +260,7 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 ### 未確定事項
 
 #### 問題
-今の仕様では、書き込める path の一覧は `ssot-sync-controller/config/allowed-paths.yml` に集約されている。  
+今の仕様書では、書き込める path の一覧は `ssot-sync-controller/config/allowed-paths.yml` に集約されている。  
 12 分割で repo が増えると、新しい catalog が新しい path を使いたい場面が増える。  
 ここで「各 catalog が自分で allowed path を増やせる」のか、「controller 側でだけ増やせる」のかを決めないと、セキュリティ境界がぶれる。
 
