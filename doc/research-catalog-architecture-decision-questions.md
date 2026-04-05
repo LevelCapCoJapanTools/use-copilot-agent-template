@@ -5,7 +5,7 @@
 ## 用語の前置き
 
 - `ssot-catalog`: `docs/ssot-distribution-system-spec-final-2026-04-04.md` で使われている既存の SSOT catalog repo の呼び名を指す。今回の論点は、この既存 repo を `ssot-core` / `ssot-schema` / `ssot-policies` に細分化するかどうかである。
-- 上書き競合: 複数の catalog repo が同じ target path へ配付を試み、後から処理された内容が先の内容を上書きしてしまう状態を指す。
+- 上書き競合: 複数の catalog repo が同じ target path へ配布を試み、後から処理された内容が先の内容を上書きしてしまう状態を指す。
 - 索引リポジトリ: target repo へ直接コピーする実体ではなく、一覧、互換表、推奨組み合わせのような判断材料を管理する repo を指す。
 
 ## 質問1: `ssot-core` / `ssot-schema` / `ssot-policies` を本当に物理 repo として分けるか
@@ -16,20 +16,20 @@
 今の仕様では SSOT は `ssot-catalog` の中でセットごとにまとめる前提になっている。  
 一方で 12 分割案では `ssot-core`、`ssot-schema`、`ssot-policies` を別 repo にしたい。  
 でも SSOT は `AGENTS.md`、`.github/copilot-instructions.md`、`.github/instructions/**` のように、最終的に target repo のルート直下や `.github/` 配下へ置きたいファイルが多い。  
-このまま 3 つに分けると、複数の repo が同じ target path へ配付を試みるため、後勝ちで上書きされる可能性がある。
+このまま 3 つに分けると、複数の repo が同じ target path へ配布を試みるため、後勝ちで上書きされる可能性がある。
 
 #### 何が何に影響するか
 この判断は `ssot-sync-controller` の単純さと、target repo の `.github/` 直下の安定性に影響する。  
 もし `ssot-core` と `ssot-schema` が同じパスへ配ると、後勝ちで上書きされ、SSOT の「単一真実源」が壊れる。  
-逆に 1 repo の中で論理分割だけにすると、配付方式は今のまま保ちやすい。
+逆に 1 repo の中で論理分割だけにすると、配布方式は今のまま保ちやすい。
 
 ### 選択肢
 
 | 選択肢 | 内容 | 特徴 |
-| ---------- | -------- | ---- |
-| ① SSOT は 1 repo のままにし、repo 内を `core/` `schema/` `policies/` に論理分割する（推奨） | 物理 repo は増やさず、SSOT の中だけを整理する | 今の配付仕様と衝突しにくい |
+| --- | --- | --- |
+| ① SSOT は 1 repo のままにし、repo 内を `core/` `schema/` `policies/` に論理分割する（推奨） | 物理 repo は増やさず、SSOT の中だけを整理する | 今の配布仕様と衝突しにくい |
 | ② `ssot-core` / `ssot-schema` / `ssot-policies` を別 repo にする | 役割ごとに完全分離する | 同一パス衝突と、複数 repo のバージョン互換性管理が複雑になりやすい |
-| ③ `ssot-core` だけ配付 repo にして、`ssot-schema` と `ssot-policies` は参照専用 repo にする | 一部だけ物理分割する | 折衷案だが、運用ルールがやや複雑になる |
+| ③ `ssot-core` だけ配布 repo にして、`ssot-schema` と `ssot-policies` は参照専用 repo にする | 一部だけ物理分割する | 折衷案だが、運用ルールがやや複雑になる |
 
 #### 推奨
 ① SSOT は 1 repo のままにし、repo 内を `core/` `schema/` `policies/` に論理分割する
@@ -38,7 +38,7 @@
 - 現行仕様の「catalog path をそのまま target repo へコピーする」と最も整合する。
 - `ssot-sync-controller` に新しい依存解決や衝突検知を持ち込まずに済む。
 - SSOT は全 AI 共通の基盤なので、同じ target path を複数 repo から配らない構造を優先した方が安全である。
-- 1 repo 内の論理分割なら、repo 間の上書き競合、つまり後から来た配付内容が先の内容を消してしまう状態を避けやすい。
+- 1 repo 内の論理分割なら、repo 間の上書き競合、つまり後から来た配布内容が先の内容を消してしまう状態を避けやすい。
 
 ### 回答
 
@@ -107,7 +107,7 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 ### 選択肢
 
 | 選択肢 | 内容 | 特徴 |
-| ---------- | -------- | ---- |
+| --- | --- | --- |
 | ① 物理分割の主基準を `path` と `権限境界` に限定し、役割差は repo 内ディレクトリや metadata で表す（推奨） | 役割だけでは repo を増やさない | 衝突しにくく、現仕様と相性が良い |
 | ② 物理分割の主基準を役割単位に切り替える | `skills-core` / `skills-provider` / `skills-domain` のように細かく分ける | 責務は見やすいが、同一パス衝突が起きやすい |
 | ③ path 単位と役割単位を案件ごとに選べるようにする | チームごとに判断を変える | 柔軟だが SSOT としてはぶれやすい |
@@ -117,7 +117,7 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 
 ##### 理由
 - 現行仕様の「path 差分がある場合は物理 repo を分離する必要がある」という前提をそのまま使える。
-- 「同じ path に届くなら同じ配送単位にまとめる」という方が、同一パスへの複数配付による上書き競合を防ぎやすい。
+- 「同じ path に届くなら同じ配送単位にまとめる」という方が、同一パスへの複数配布による上書き競合を防ぎやすい。
 - 役割の見通しは `catalog.yml` や README などの metadata で補えるため、物理分割に無理に載せる必要がない。
 
 ### 回答
@@ -161,7 +161,7 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 path および権限境界を基準とすることで：
 
 - 「どこに配置されるか」と「どのリポジトリか」が一致する
-- 配付単位が明確になる
+- 配布単位が明確になる
 - CI / 権限管理との整合性が取れる
 
 #### 4. 役割の可読性は他の手段で担保可能
@@ -213,7 +213,7 @@ path および権限境界を基準とすることで：
 ### 選択肢
 
 | 選択肢 | 内容 | 特徴 |
-| ---------- | -------- | ---- |
+| --- | --- | --- |
 | ① provider 固有の業務操作は `skills-provider`、OS / shell / path 差分は `adapter-layer` に限定する（推奨） | 「何をするか」と「どう吸収するか」を分ける | 重複しにくい |
 | ② provider 差分も adapter-layer に寄せる | 環境差分を 1 か所へ集める | adapter が肥大化しやすい |
 | ③ adapter-layer をなくし、全部 `skills-provider` に寄せる | repo 数を減らせる | portability が落ち、再利用しにくい |
@@ -249,7 +249,7 @@ path および権限境界を基準とすることで：
 ### 選択肢
 
 | 選択肢 | 内容 | 特徴 |
-| ---------- | -------- | ---- |
+| --- | --- | --- |
 | ① `mcp-tools` は基本操作、`skills-*` は複数 tool を束ねた利用者向け能力に限定する（推奨） | 低レベルと高レベルを分離する | 依存方向が明確 |
 | ② provider ごとの操作も `mcp-tools` に含める | tool 側に機能を寄せる | skill の存在意義が薄くなる |
 | ③ `skills-*` をなくして `mcp-tools` だけで表現する | 構造は単純になる | 使い方の意味づけが弱くなる |
@@ -268,13 +268,13 @@ path および権限境界を基準とすることで：
 
 ---
 
-## 質問5: `infra-runtime` を配付対象に含めるなら、何まで入れてよいか
+## 質問5: `infra-runtime` を配布対象に含めるなら、何まで入れてよいか
 
 ### 未確定事項
 
 #### 問題
 `infra-runtime` は「実行環境・デプロイ・secret」を扱う想定になっている。  
-でも今の配付方式は catalog の中身をそのまま target repo にコピーする方式である。  
+でも今の配布方式は catalog の中身をそのまま target repo にコピーする方式である。  
 この方式で secret まで repo に配るのは危険で、そもそもやってはいけない。  
 公開 repo や共有 repo なら機密情報が見えてしまうし、Git 履歴に残ると後から完全に消すのも難しい。  
 つまり `infra-runtime` に入れてよいものと、絶対に入れてはいけないものを先に決める必要がある。
@@ -287,49 +287,49 @@ path および権限境界を基準とすることで：
 ### 選択肢
 
 | 選択肢 | 内容 | 特徴 |
-| ---------- | -------- | ---- |
-| ① `infra-runtime` には非機密の runtime 定義、deploy 手順、IaC テンプレートだけを入れ、secret 実値は対象外にする（推奨） | 配付可能なものを限定する | 現行方式でも安全性を保ちやすい |
+| --- | --- | --- |
+| ① `infra-runtime` には非機密の runtime 定義、deploy 手順、IaC テンプレートだけを入れ、secret 実値は対象外にする（推奨） | 配布可能なものを限定する | 現行方式でも安全性を保ちやすい |
 | ② `infra-runtime` に secret 参照定義と実値の両方を持たせる | repo 単体で完結させる | セキュリティ上の危険が大きい |
-| ③ `infra-runtime` は配付対象から外し、別管理にする | catalog を軽くできる | version 管理が分裂しやすい |
+| ③ `infra-runtime` は配布対象から外し、別管理にする | catalog を軽くできる | version 管理が分裂しやすい |
 
 #### 推奨
 ① `infra-runtime` には非機密の runtime 定義、deploy 手順、IaC テンプレートだけを入れ、secret 実値は対象外にする
 
 ##### 理由
-- 現行の「catalog path をそのまま target repo へコピーする」方式でも、非機密設定なら安全に配付できる。
+- 現行の「catalog path をそのまま target repo へコピーする」方式でも、非機密設定なら安全に配布できる。
 - Secret 実値は `infra-runtime` に入れず、Vault / GitHub Secrets / 環境変数など別経路で注入する方が責務が明確である。
 - `infra-runtime` を完全に除外すると、deploy 定義だけ version 固定の枠外に落ちるため、管理がぶれやすい。
 
 ---
 
-## 質問6: `skill-catalog` は配付 repo なのか、設計用のメタレジストリなのか
+## 質問6: `skill-catalog` は配布 repo なのか、設計用のメタレジストリなのか
 
 ### 未確定事項
 
 #### 問題
 `skill-catalog` は「スキル一覧・依存・version 管理」と書かれている。  
-でも今の仕様で配付されるのは「target repo にコピーされる実体ファイル」である。  
+でも今の仕様で配布されるのは「target repo にコピーされる実体ファイル」である。  
 `skill-catalog` が実体ファイルを配らないなら、それは catalog というより「索引」や「台帳」に近い。  
 ここを決めないと、`ssot-bot.yml` に `skill-catalog/...` を書くべきかどうかも決まらない。
 
 #### 何が何に影響するか
 この判断は `ssot-bot.yml` の書き方と、`ssot-sync-controller` の責務に影響する。  
-もし `skill-catalog` を配付対象にすると、controller が追加の特別処理を持つ可能性が高い。  
+もし `skill-catalog` を配布対象にすると、controller が追加の特別処理を持つ可能性が高い。  
 逆に metadata 専用と決めれば、実行時の処理は増えず、DESIGN 時の判断材料として使える。
 
 ### 選択肢
 
 | 選択肢 | 内容 | 特徴 |
-| ---------- | -------- | ---- |
+| --- | --- | --- |
 | ① `skill-catalog` は metadata 専用の索引リポジトリにし、target repo へは配らない（推奨） | 設計判断の索引として使う | 実行時責務を増やさない |
-| ② `skill-catalog` を配付 repo として扱い、複合セットを直接 target repo に配る | 入口を 1 つにまとめやすい | セット依存に近い処理が必要になる |
+| ② `skill-catalog` を配布 repo として扱い、複合セットを直接 target repo に配る | 入口を 1 つにまとめやすい | セット依存に近い処理が必要になる |
 | ③ `skill-catalog` を廃止し、情報を `skills-core` に寄せる | 構成は減る | `skills-core` の責務が太くなる |
 
 #### 推奨
 ① `skill-catalog` は metadata 専用の索引リポジトリにし、target repo へは配らない
 
 ##### 理由
-- `skill-catalog` を配付対象にしないことで、`ssot-sync-controller` に新しい解決ロジックを足さずに済む。
+- `skill-catalog` を配布対象にしないことで、`ssot-sync-controller` に新しい解決ロジックを足さずに済む。
 - version 互換表や推奨セット一覧は、DESIGN Issue の判断材料として持つ方が使いやすい。
 - 「実行するもの」と「選ぶための情報」を分けることで、実行時責務と定義時責務を分離できる。
 - もし metadata 専用に寄せるなら、命名変更は別の設計判断事項として切り出し、`skill-catalog` のまま続けるかを別途決めた方が論点を混ぜにくい。
@@ -374,7 +374,7 @@ flowchart TD
 ### 選択肢
 
 | 選択肢 | 内容 | 特徴 |
-| ---------- | -------- | ---- |
+| --- | --- | --- |
 | ① すべての catalog を `set.yml` からの相対パスに統一する（推奨） | ルールを 1 つにそろえる | 書き方が分かりやすい |
 | ② すべての catalog を repo ルート基準に統一する | Skills / MCP に合わせる | SSOT の既存説明を直す必要がある |
 | ③ 層ごとに別ルールを維持する | 既存仕様を崩さない | 12 分割後の認知負荷が高い |
@@ -410,7 +410,7 @@ flowchart TD
 ### 選択肢
 
 | 選択肢 | 内容 | 特徴 |
-| ---------- | -------- | ---- |
+| --- | --- | --- |
 | ① `skill-catalog` などの metadata repo に「推奨 version tuple」を持たせ、DESIGN 時に参照する（推奨） | 実行時ではなく設計時に整合を確認する | 現行 controller を大きく変えない |
 | ② `ssot-sync-controller` に互換性チェック機能を追加する | 実行時に不整合を止められる | 依存解決機能が肥大化しやすい |
 | ③ target repo 側で完全手動管理にする | 実装変更は少ない | 利用者の負担が大きい |
@@ -421,7 +421,7 @@ flowchart TD
 ##### 理由
 - `ssot-sync-controller` の責務を「コピーと差分生成」に留めやすい。
 - version 固定と手動 rollback の方針を崩さずに、判断材料だけを整備できる。
-- 配付時ではなく設計時に整合性を見ることで、実行時の複雑化を避けられる。
+- 配布時ではなく設計時に整合性を見ることで、実行時の複雑化を避けられる。
 
 ### 回答
 
@@ -440,13 +440,13 @@ flowchart TD
 
 #### 何が何に影響するか
 この判断は `ssot-sync-controller` の安全装置と、catalog 追加時の手間に影響する。  
-catalog 側で自由に path を増やせると、危険な場所まで配付範囲が広がる可能性がある。  
+catalog 側で自由に path を増やせると、危険な場所まで配布範囲が広がる可能性がある。  
 逆に controller 側に集約すれば手続きは増えるが、「どこに書いてよいか」を中央で止められる。
 
 ### 選択肢
 
 | 選択肢 | 内容 | 特徴 |
-| ---------- | -------- | ---- |
+| --- | --- | --- |
 | ① `allowed-paths.yml` は `ssot-sync-controller` に中央集約し続ける（推奨） | path 許可は中央承認にする | セキュリティ境界が明確 |
 | ② 各 catalog repo に allowed path 定義を置く | catalog 単位で自己完結できる | 許可の一貫性が崩れやすい |
 | ③ 中央の禁止リストだけを残し、それ以外は許可する | 追加は簡単 | 安全側に倒しにくい |
@@ -464,3 +464,157 @@ catalog 側で自由に path を増やせると、危険な場所まで配付範
 ① `allowed-paths.yml` は `ssot-sync-controller` に中央集約し続ける
 
 ---
+
+**追加調査で見つかった未確定事項**
+
+## 質問10: `ssot-core` / `ssot-schema` / `ssot-policies` の3軸が同じ target path に出力するとき、何を優先するか
+
+### 未確定事項
+
+#### 問題
+質問1の回答では、SSOT を `ssot-core` / `ssot-schema` / `ssot-policies` の3軸に分ける方針が示されている。  
+一方で質問2の回答では、物理 repo 分割の主基準は `path / 権限境界` だとしている。  
+この2つを同時に採用すると、たとえば `.github/copilot/00-index.md`、`.github/instructions/**`、`40-testing-strategy.md`、`50-security.md` のような同一 target path に対して、複数軸から配布する場面が発生しうる。  
+そのとき「どの軸が優先されるか」が未定義である。
+
+#### 何が何に影響するか
+この判断は `ssot-sync-controller` の差分生成順序、PR で見える最終ファイル、target repo 側の理解しやすさに影響する。  
+優先順がないまま後勝ちに任せると、`ssot-core` の基底ルールを `ssot-policies` が偶然上書きし、設計意図が見えにくくなる。  
+逆に優先ルールや専有 path を決めれば、3軸構成と path 基準の両立条件を明文化できる。
+
+### 選択肢
+
+| 選択肢 | 内容 | 特徴 |
+| --- | --- | --- |
+| ① 軸ごとに専有 path を持たせ、同じ target path へは出力しない（推奨） | `ssot-core` / `ssot-schema` / `ssot-policies` が担当ファイルを分担する | 3軸分割と path 基準を両立しやすい |
+| ② 3軸の優先順を固定し、同一 path ではその順で後勝ちにする | 例: `core -> schema -> policies` | 実装は簡単だが、暗黙の上書きが増える |
+| ③ target repo 側で merge する前提にし、catalog は部分ファイルだけを持つ | controller は断片を集めるだけにする | 仕組みが大きく変わり、現行仕様から離れる |
+
+#### 推奨
+① 軸ごとに専有 path を持たせ、同じ target path へは出力しない
+
+##### 理由
+- 質問1の「3軸を独立した軸として扱う」と、質問2の「path / 権限境界を主基準にする」を両立しやすい。
+- `ssot-sync-controller` に新しい merge ロジックを持ち込まずに済む。
+- 後勝ちを事故対応の最後の逃げ道に留め、平常運用では上書き競合を起こさない設計へ寄せられる。
+
+## 質問11: `ssot-schema` と `ssot-policies` は、`00-index.md` や `40-testing-strategy.md` / `50-security.md` をどう変えるのか
+
+### 未確定事項
+
+#### 問題
+質問1の回答では、`ssot-schema` は `.github/instructions/**` を担当し、`ssot-policies` は `40-testing-strategy.md` や `50-security.md` を set 指定で変えられる想定が示されている。  
+しかし、何を「丸ごと差し替える」のか、どこを「選択的に変える」のか、まだ定義されていない。  
+たとえば `00-index.md` の参照順や `50-security.md` の内容を変えるなら、target repo 側では「どの set が効いているか」を追跡できる必要がある。
+
+#### 何が何に影響するか
+この判断は `ssot-bot.yml` の記法、`ssot-sync-controller` の読み方、設計レビューのしやすさに影響する。  
+仕組みが曖昧なままだと、「schema の set を変えたのか」「policies の set を変えたのか」が PR だけでは分かりにくい。  
+逆に set の効き方を明文化すれば、3軸の責務と変更範囲をレビューしやすくなる。
+
+### 選択肢
+
+| 選択肢 | 内容 | 特徴 |
+| --- | --- | --- |
+| ① `ssot-schema` / `ssot-policies` は担当ファイルを丸ごと差し替える単位として扱う（推奨） | set ごとに完成済みファイルを持つ | controller が単純なままで済む |
+| ② 1ファイルの一部だけを軸ごとに差し込む | 章や節だけを切り替える | merge 仕様が増え、複雑になる |
+| ③ `00-index.md` などの基底ファイルは `ssot-core` 固定にし、schema/policies は周辺ファイルだけ変える | 変更対象を限定する | 安全だが柔軟性は下がる |
+
+#### 推奨
+① `ssot-schema` / `ssot-policies` は担当ファイルを丸ごと差し替える単位として扱う
+
+##### 理由
+- 現行仕様の「catalog path をそのまま target repo へコピーする」に最も近い。
+- 「一部差し込み」を避けることで、どの軸がどのファイルを担当しているかを明確にできる。
+- 必要なら質問10の専有 path ルールと組み合わせて、担当範囲をはっきりさせられる。
+
+## 質問12: `skill-catalog` を配布しない索引リポジトリにするなら、誰がいつ参照するのか
+
+### 未確定事項
+
+#### 問題
+質問6の回答では `skill-catalog` は配布しない索引リポジトリとされ、質問8の回答では version 組み合わせは target repo 側で完全手動管理とされている。  
+この2つを並べると、`skill-catalog` は存在するが、実際に誰が・いつ・どの手順で使うのかが曖昧になる。  
+質問6の図では Planner が `skill-catalog` を参照しているが、その責務が本文ではまだ固定されていない。
+
+#### 何が何に影響するか
+この判断は DESIGN Issue の作り方、Planner の責務、target repo 側の version 更新手順に影響する。  
+参照主体が決まらないままだと、`skill-catalog` は「あるが使われない台帳」になりやすい。  
+逆に参照タイミングを決めれば、完全手動管理と索引 repo の役割分担を整理できる。
+
+### 選択肢
+
+| 選択肢 | 内容 | 特徴 |
+| --- | --- | --- |
+| ① Planner / DESIGN フェーズだけが `skill-catalog` を参照し、Executor / controller は参照しない（推奨） | 設計時だけ使う索引にする | 実行時責務を増やさない |
+| ② `ssot-sync-controller` が実行時に `skill-catalog` を読んで互換性を判定する | 実行時に不整合を止められる | controller が重くなる |
+| ③ `skill-catalog` を廃止し、各 catalog repo の README に推奨組み合わせを書く | 構成は単純になる | 推奨情報が散らばる |
+
+#### 推奨
+① Planner / DESIGN フェーズだけが `skill-catalog` を参照し、Executor / controller は参照しない
+
+##### 理由
+- 質問6で整理した「実行時責務と定義時責務の分離」に合う。
+- 質問8の「target repo 側で手動管理する」とも両立しやすく、手動更新の判断材料として `skill-catalog` を使える。
+- `ssot-sync-controller` は現行どおり、指定された version をそのまま配るだけの単純な役割を保てる。
+
+## 質問13: include 基準を層ごとに残すなら、`ssot-sync-controller` の複雑性はどこまで許容するか
+
+### 未確定事項
+
+#### 問題
+質問7の回答では、include 基準は「層ごとに別ルールを維持する」となっている。  
+しかし質問1の回答で SSOT を3軸化すると、SSOT 内でも repo が増える。  
+この状態で SSOT / Skills / MCP / 追加の索引 repo がそれぞれ別の include 基準を持つと、`ssot-sync-controller` は repo 種別ごとに path 解決ルールを持つ必要がある。  
+その複雑性をどこまで許容するかが未確定である。
+
+#### 何が何に影響するか
+この判断は controller 実装の保守性、設定ミス時の検出しやすさ、今後 repo を増やしたときの説明コストに影響する。  
+ルールが増えすぎると、同じ `include:` でも repo によって意味が変わり、利用者が誤記しやすい。  
+逆に許容範囲を先に決めれば、「例外を増やすのか」「統一へ寄せるのか」を判断しやすい。
+
+### 選択肢
+
+| 選択肢 | 内容 | 特徴 |
+| --- | --- | --- |
+| ① include 基準の例外は SSOT と Skills/MCP の2系統までに制限する（推奨） | 追加 repo でも既存2系統のどちらかに寄せる | 複雑性を抑えやすい |
+| ② repo ごとに独自基準を持てるようにする | 柔軟性は高い | controller の理解と実装が重くなる |
+| ③ 追加 repo を作る前に、include 基準を全面統一する | 仕様を整理し直す | 変更範囲は大きいが最も分かりやすい |
+
+#### 推奨
+① include 基準の例外は SSOT と Skills/MCP の2系統までに制限する
+
+##### 理由
+- 既存仕様との差分を最小化しつつ、例外の増殖を止められる。
+- 質問7の回答を尊重しながらも、controller 実装の複雑化に上限を設けられる。
+- DESIGN では「新 repo は既存2系統のどちらへ寄せるか」を判断すればよくなる。
+
+## 質問14: `infra-runtime` の「非機密」と `allowed-paths.yml` の中央管理をどう結びつけるか
+
+### 未確定事項
+
+#### 問題
+質問5の回答では `infra-runtime` は非機密の runtime 定義だけを配るとしており、質問9の回答では `allowed-paths.yml` は `ssot-sync-controller` に中央集約し続けるとしている。  
+しかし、この2つだけでは「何を非機密と判定するのか」「誰が新 path を承認するのか」がまだ不明である。  
+たとえば IaC テンプレート、サンプルの環境変数、default 値入り設定ファイルのどこまでを `infra-runtime` に含めてよいかが未定義である。
+
+#### 何が何に影響するか
+この判断は security review、catalog 追加フロー、`infra-runtime` の repo 境界に影響する。  
+基準がないと、catalog 作成者ごとに「これは非機密」と解釈が分かれ、中央管理の意味が弱くなる。  
+逆に判定基準と承認者を決めれば、質問5と質問9の回答を実運用に落とし込みやすい。
+
+### 選択肢
+
+| 選択肢 | 内容 | 特徴 |
+| --- | --- | --- |
+| ① `infra-runtime` は template / placeholder だけを許可し、実値を含む設定は常に禁止と明文化する（推奨） | allowed-paths の審査基準をはっきりさせる | security review しやすい |
+| ② `infra-runtime` の非機密判定は catalog repo ごとの裁量に任せる | 追加は速い | 判定がぶれやすい |
+| ③ `infra-runtime` 自体を配布対象から外す | 危険は減る | deploy 定義の version 管理が分裂する |
+
+#### 推奨
+① `infra-runtime` は template / placeholder だけを許可し、実値を含む設定は常に禁止と明文化する
+
+##### 理由
+- 質問5の「secret 実値は別経路」と、質問9の「中央管理」をつなぐ運用ルールになる。
+- `allowed-paths.yml` の承認時に、path だけでなく内容基準も確認しやすくなる。
+- `infra-runtime` を残しつつ、機密混入リスクを最小化できる。
