@@ -8,7 +8,7 @@
 このため、本システムでは次を原則とする。
 
 * 各 repo は **何を使うかだけ** 宣言する
-* 同期ロジックは **sync-core** に中央集約する
+* 同期ロジックは **ssot-sync-controller** に中央集約する
 * GitHub への変更反映は **GitHub App 認証**で行う
 * 差分は **PR 作成型**で提示する
 * version は **固定**し、自動 latest 追従しない
@@ -21,7 +21,7 @@
 以下は、最初に確定していた大方針であり、本版でも維持する。
 
 * pull型（各 repo Actions）
-* github-app認証
+* ssot-bot認証
 * PR作成型
 * version固定
 * セット方式
@@ -106,13 +106,13 @@
 
 ### 途中案
 
-* sync-core が AI 種別ごとに path を写像する
+* ssot-sync-controller が AI 種別ごとに path を写像する
 
 ### 最終確定
 
 * **catalog のパスをそのまま保持して target repo に置く**
 * そのため、出力先構造が異なる系統は、**物理的にカタログ repo を分ける**
-* sync-core は path remap をしない
+* ssot-sync-controller は path remap をしない
 
 ---
 
@@ -143,7 +143,7 @@
                         │
                         ▼
 ┌────────────────────────────────────────────┐
-│ sync-core                                  │
+│ ssot-sync-controller                                  │
 │                                            │
 │ - 設定読込                                 │
 │ - catalog checkout                         │
@@ -154,7 +154,7 @@
 │ - 上書き / 削除差分生成                    │
 │ - JSON 指示生成（BASE64済）                │
 └───────────────────────┬────────────────────┘
-                        │ github-app 認証を使用
+                        │ ssot-bot 認証を使用
                         ▼
 ┌────────────────────────────────────────────┐
 │ GitHub App                                 │
@@ -183,8 +183,8 @@
 
 | repo               | 役割                                 |
 | ------------------ | ---------------------------------- |
-| `sync-core`        | 中央同期ロジック                           |
-| `github-app`       | GitHub 操作の認証主体                     |
+| `ssot-sync-controller`        | 中央同期ロジック                           |
+| `ssot-bot`       | GitHub 操作の認証主体                     |
 | `ssot-catalog`     | SSOT 実体とセット定義                      |
 | `skills-*-catalog` | Skills 実体とセット定義。出力先構造が異なる系統ごとに物理分割 |
 | `mcp-*-catalog`    | MCP 実体とセット定義。出力先構造が異なる系統ごとに物理分割    |
@@ -245,7 +245,7 @@ use:
 ## 8.3 排他制御
 
 * GitHub Actions の `concurrency` のみで排他する
-* sync-core 内ロックは持たない
+* ssot-sync-controller 内ロックは持たない
 * Redis ロック、ファイルロック、DB ロックは持たない
 
 例:
@@ -264,16 +264,16 @@ concurrency:
 
 ---
 
-# 9. sync-core と github-app の責務境界
+# 9. ssot-sync-controller と ssot-bot の責務境界
 
 ## 9.1 原則
 
 ```text
-sync-core = 「何をするか決め、完全な材料を作る頭脳」
-github-app = 「GitHub に対して操作する身分証・実行主体」
+ssot-sync-controller = 「何をするか決め、完全な材料を作る頭脳」
+ssot-bot = 「GitHub に対して操作する身分証・実行主体」
 ```
 
-## 9.2 sync-core の責務
+## 9.2 ssot-sync-controller の責務
 
 * `ssot-bot.yml` 読込
 * catalog checkout
@@ -288,7 +288,7 @@ github-app = 「GitHub に対して操作する身分証・実行主体」
 * JSON 指示生成
 * `content` の BASE64 化
 
-## 9.3 github-app の責務
+## 9.3 ssot-bot の責務
 
 * GitHub App JWT 生成
 * Installation Token 取得
@@ -301,15 +301,15 @@ github-app = 「GitHub に対して操作する身分証・実行主体」
 
 ## 9.4 NG
 
-* github-app が差分計算しない
-* github-app がセット解決しない
-* github-app が BASE64 変換しない
-* sync-core が曖昧な材料を渡さない
-* sync-core が raw content を渡して github-app 側に加工させない
+* ssot-bot が差分計算しない
+* ssot-bot がセット解決しない
+* ssot-bot が BASE64 変換しない
+* ssot-sync-controller が曖昧な材料を渡さない
+* ssot-sync-controller が raw content を渡して ssot-bot 側に加工させない
 
 ---
 
-# 10. sync-core → github-app インターフェース仕様
+# 10. ssot-sync-controller → ssot-bot インターフェース仕様
 
 ```json
 {
@@ -340,12 +340,12 @@ github-app = 「GitHub に対して操作する身分証・実行主体」
 
 ## 10.1 ルール
 
-* `content` は **sync-core が BASE64 化**する
+* `content` は **ssot-sync-controller が BASE64 化**する
 * `content` と `delete` は同時に持てない
 * `path` は相対パスのみ
 * 先頭 `/` 禁止
 * `..` 禁止
-* `files` が空なら github-app は何もしない
+* `files` が空なら ssot-bot は何もしない
 * rename は持たず `delete + add` で扱う
 
 ---
@@ -404,8 +404,8 @@ chore(ssot): sync ssot-core@v1.2.3 [20260404-120001]
 | 項目        | 担当          |
 | --------- | ----------- |
 | テンプレート構造  | target repo |
-| 埋め込むデータ   | sync-core   |
-| PR API 実行 | github-app  |
+| 埋め込むデータ   | ssot-sync-controller   |
+| PR API 実行 | ssot-bot  |
 
 ## 12.4 PR 本文に含める情報
 
@@ -423,16 +423,16 @@ chore(ssot): sync ssot-core@v1.2.3 [20260404-120001]
 
 * `.ssot/` のような単一隔離ディレクトリには集約しない
 * **repo 内の用途別ディレクトリに分散**する
-* ただし、どこにでも書いてよいわけではなく、**sync-core 内ホワイトリスト**で中央制御する
+* ただし、どこにでも書いてよいわけではなく、**ssot-sync-controller 内ホワイトリスト**で中央制御する
 
 ## 13.2 ホワイトリストの実体
 
-ホワイトリストは **sync-core 内ファイル**で管理する。
+ホワイトリストは **ssot-sync-controller 内ファイル**で管理する。
 
 例:
 
 ```yaml
-# sync-core/config/allowed-paths.yml
+# ssot-sync-controller/config/allowed-paths.yml
 allowed:
   - docs/**
   - .github/copilot/**
@@ -566,7 +566,7 @@ include:
 ## 16.5 コピー規則
 
 * include に列挙された path を、その**相対位置のまま** target repo に置く
-* sync-core 側で path remap はしない
+* ssot-sync-controller 側で path remap はしない
 
 ---
 
@@ -580,7 +580,7 @@ include:
   * `skills-copilot-catalog`
   * `skills-claude-catalog`
 
-> ここで重要なのは、**sync-core が AI 種別ごとに path remap しない**こと。
+> ここで重要なのは、**ssot-sync-controller が AI 種別ごとに path remap しない**こと。
 > 出力先 path の違いは、catalog repo 側の構造で表現する。
 
 ## 17.2 配置方針
@@ -620,7 +620,7 @@ include:
 ## 17.6 コピー規則
 
 * **catalog の path をそのまま保持して** target repo に置く
-* sync-core は path remap しない
+* ssot-sync-controller は path remap しない
 
 ---
 
@@ -671,7 +671,7 @@ include:
 ## 18.6 コピー規則
 
 * **catalog の path をそのまま保持して** target repo に置く
-* sync-core は path remap しない
+* ssot-sync-controller は path remap しない
 
 ---
 
@@ -685,13 +685,13 @@ include:
 ## 19.2 仕組み上の挙動
 
 * 同一対象に複数入力が来た場合は **後勝ち**
-* sync-core はそのままストリーム評価する
+* ssot-sync-controller はそのままストリーム評価する
 * 衝突防止ロジックは持たない
 
 ## 19.3 意味
 
 * ルール違反はカタログ側設計ミス
-* sync-core 側は軽量・単純に保つ
+* ssot-sync-controller 側は軽量・単純に保つ
 
 ---
 
@@ -777,7 +777,7 @@ include:
 | 衝突                | 後勝ち                                                      |
 | missing include   | 警告                                                       |
 | empty include     | 許容                                                       |
-| 書込範囲              | sync-core ホワイトリスト                                        |
+| 書込範囲              | ssot-sync-controller ホワイトリスト                                        |
 | 既存ファイル            | 上書き                                                      |
 | 不要ファイル            | 削除                                                       |
 | ルート直下             | 完全支配                                                     |
@@ -789,7 +789,7 @@ include:
 | PR タイトル           | `chore(ssot): sync <source>@<version> [YYYYMMDD-HHMMSS]` |
 | 既存 PR             | 常に新規作成                                                   |
 | PR テンプレ           | `.github/PULL_REQUEST_TEMPLATE/ssot-sync.md`             |
-| BASE64 化          | sync-core 責務                                             |
+| BASE64 化          | ssot-sync-controller 責務                                             |
 | SSOT include 基準   | `set.yml` 相対                                             |
 | Skills include 基準 | catalog ルート基準                                            |
 | MCP include 基準    | catalog ルート基準                                            |
