@@ -498,6 +498,12 @@ catalog 側で自由に path を増やせると、危険な場所まで配布範
 - `ssot-sync-controller` に新しい merge ロジックを持ち込まずに済む。
 - 後勝ちを事故対応の最後の逃げ道に留め、平常運用では上書き競合を起こさない設計へ寄せられる。
 
+### 回答
+
+① 論理分割または物理分割した軸ごとに担当ファイルを分担し、同じ target path へは出力しない
+
+---
+
 ## 質問11: `ssot-schema` と `ssot-policies` は、`00-index.md` や `40-testing-strategy.md` / `50-security.md` をどう変えるのか
 
 ### 未確定事項
@@ -527,6 +533,12 @@ catalog 側で自由に path を増やせると、危険な場所まで配布範
 - 現行仕様の「catalog path をそのまま target repo へコピーする」に最も近い。
 - 「一部差し込み」を避けることで、どの軸がどのファイルを担当しているかを明確にできる。
 - 必要なら質問10の専有 path ルールと組み合わせて、担当範囲をはっきりさせられる。
+
+### 回答
+
+① `ssot-schema` / `ssot-policies` は担当ファイルを丸ごと差し替える単位として扱う
+
+---
 
 ## 質問12: `skill-catalog` を配布しない索引リポジトリにするなら、誰がいつ参照するのか
 
@@ -559,6 +571,70 @@ catalog 側で自由に path を増やせると、危険な場所まで配布範
 - 質問8の「target repo 側で手動管理する」とも両立しやすく、手動更新の判断材料として `skill-catalog` を使える。
 - `ssot-sync-controller` は現行どおり、指定された version をそのまま配るだけの単純な役割を保てる。
 
+### 回答
+
+回答：
+
+①で確定で良い。そのうえで曖昧になっているポイントは「誰が使うか」ではなく「いつ固定されるか」。
+
+`skill-catalog` は **実行のための仕組みではなく、設計のための判断材料**。
+参照主体は明確に **Planner（= DESIGN Issueを作る人 / AI）だけ**。
+
+時系列で整理するとこうなる：
+
+1. DESIGNフェーズ
+   Plannerが `skill-catalog` を読む
+   → 「安全な version 組み合わせ（tuple）」を決める
+   → その結果を DESIGN Issue に書く（ここで確定）
+
+2. IMPLEMENTフェーズ
+   target repo 側は DESIGN Issue に書かれた version をそのまま採用
+   → `ssot-sync-controller` はそれを配るだけ（何も判断しない）
+
+3. 実行時
+   Executor / MCP / controller は **catalogを一切見ない**
+   → 既に固定された version を使うだけ
+
+つまり構造はこう：
+
+```text
+skill-catalog →（参照するのはここだけ）→ Planner（DESIGN時）
+                                               ↓
+                                      DESIGN Issueに固定
+                                               ↓
+target repo / controller / executor（参照しない）
+```
+
+ここを曖昧にすると破綻する理由は2つ：
+
+* 実行時にcatalogを見始めると「その場で判断」が発生して決定性が崩れる
+* controllerに判定責務を持たせると「配布システム」が「依存解決システム」に変質する
+
+逆にこの設計だと役割が完全に分離される：
+
+* `skill-catalog`：おすすめの組み合わせを提示するだけ（知識）
+* Planner：それを見て決める（意思決定）
+* DESIGN Issue：決定結果（契約）
+* controller：配るだけ（無思考）
+* executor：実行するだけ（無思考）
+
+重要なのはここ：
+
+```text
+catalogは「選ぶためのもの」であって「動かすためのものではない」
+```
+
+したがって、
+
+* 誰が参照するか → Plannerのみ
+* いつ参照するか → DESIGN時のみ
+* どこに結果を残すか → DESIGN Issue
+* 実行系は参照するか → 一切しない
+
+これで責務は完全に固定される。
+
+---
+
 ## 質問13: include 基準を層ごとに残すなら、`ssot-sync-controller` の複雑性はどこまで許容するか
 
 ### 未確定事項
@@ -590,6 +666,12 @@ catalog 側で自由に path を増やせると、危険な場所まで配布範
 - 質問7の回答を尊重しながらも、controller 実装の複雑化に上限を設けられる。
 - DESIGN では「新 repo は既存2系統のどちらへ寄せるか」を判断すればよくなる。
 
+### 回答
+
+① include 基準の例外は SSOT と Skills/MCP の2系統までに制限する
+
+---
+
 ## 質問14: `infra-runtime` の「非機密」と `allowed-paths.yml` の中央管理をどう結びつけるか
 
 ### 未確定事項
@@ -619,3 +701,7 @@ catalog 側で自由に path を増やせると、危険な場所まで配布範
 - 質問5の「secret 実値は別経路」と、質問9の「中央管理」をつなぐ運用ルールになる。
 - `allowed-paths.yml` の承認時に、path だけでなく内容基準も確認しやすくなる。
 - `infra-runtime` を残しつつ、機密混入リスクを最小化できる。
+
+### 回答
+
+① `infra-runtime` は template / placeholder だけを許可し、実値を含む設定は常に禁止と明文化する
