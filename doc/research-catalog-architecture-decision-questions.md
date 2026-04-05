@@ -40,6 +40,56 @@
 - SSOT は全 AI 共通の基盤なので、同じ target path を複数 repo から配らない構造を優先した方が安全である。
 - 1 repo 内の論理分割なら、repo 間の上書き競合、つまり後から来た配付内容が先の内容を消してしまう状態を避けやすい。
 
+### 回答
+
+② `ssot-core` / `ssot-schema` / `ssot-policies` を別 repo にする
+
+`セット = 複数repoの束`ではなくて
+`構成 = 複数の「軸（レイヤ）」の組み合わせ`に変更する。
+
+セットで用途は決めるが、その中でも分類を組み合わせるようにしたい、原則が違うでしょ？それでSSOTやスキルの運用も違うでしょ？
+ssot-core : react-php(言語や構成、php-react, iphoneappなど)
+ssot-schema: agile(コーディング運用の方法、agile,pmbokなど)
+ssot-policies: rentalserver (展開先やサーバーポリシーなど、レンタルサーバー、サーバーA、自宅サーバーなど)
+
+スキルも外向きと内向きで対応が違う。共通で使わなければならないものがある。
+
+例えばで聞いてほしいけど今はこんな感じ（★そのまま採用するな！）
+
+``` markdown
+/// .github/copilot/00-index.md
+## 参照順（優先度順）
+※ 構成定義レイヤはリポジトリ全体の前提となるため最初に参照してください。番号は通常の昇順で付与しています。
+
+1. [構成定義レイヤ](05-structure/monorepo.md) — モノレポ運用ルール
+2. [copilot-instructions.md](../copilot-instructions.md) — 規範層（短く強いルール）
+3. [.github/instructions/**/*.instructions.md](../instructions) — 補助的な設計/背景資料レイヤ（`applyTo` は適用範囲を示すメタ情報）
+4. [10-requirements.md](10-requirements.md) — 要件とスコープ/受入条件
+5. [20-architecture.md](20-architecture.md) — 設計方針・責務分担
+6. [30-coding-standards.md](30-coding-standards.md) — コーディング規約
+7. [40-testing-strategy.md](40-testing-strategy.md) — テスト戦略
+8. [50-security.md](50-security.md) — セキュリティ要求
+9. [60-ci-quality-gates.md](60-ci-quality-gates.md) — CI 品質ゲート
+10. [70-adr/](70-adr/) — 重要判断の履歴
+11. [80-templates/](80-templates/) — plan / PR / review のテンプレート
+12. [plans/](plans/) — フェーズ別の実装/設計計画（例: 33-implementation-plan.md）
+```
+
+ssot-schemaは(../instructions)を担当したり
+ssot-policiesは40-testing-strategy.mdや50-security.mdがset指定で変更できたりするわけ
+その他はssot-core集約など
+★これはあくまであんな訳
+
+```
+SSOT = 3つの独立した軸
+
+① 構成（技術・言語）
+② 運用（開発プロセス）
+③ 環境（制約・ポリシー）
+```
+
+---
+
 ## 質問2: catalog の物理分割ルールを「役割単位」に広げるか、「path / 権限境界単位」に限定するか
 
 ### 未確定事項
@@ -69,6 +119,81 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 - 現行仕様の「path 差分がある場合は物理 repo を分離する必要がある」という前提をそのまま使える。
 - 「同じ path に届くなら同じ配送単位にまとめる」という方が、同一パスへの複数配付による上書き競合を防ぎやすい。
 - 役割の見通しは `catalog.yml` や README などの metadata で補えるため、物理分割に無理に載せる必要がない。
+
+### 回答
+
+## 回答
+
+本件の分割基準については、以下の通り整理する。
+
+
+### 結論
+
+物理リポジトリの分割基準は **`path / 権限境界` を主とする**。  
+役割差による分割は **補助的表現（ディレクトリ・metadata）に限定し、主基準にはしない**。
+
+
+### 理由
+
+#### 1. 本システムは衝突を仕様として許容しているため
+
+本設計では以下が前提である：
+
+- 同一パスへの出力は許容される
+- 衝突時は後勝ちで上書きされる
+- ログを出力し、処理は継続される
+
+したがって、リポジトリ分割によって衝突を防ぐことは設計上の主目的ではない。
+
+
+#### 2. 役割単位での分割は、最終配置パスと独立であり一貫性を持たないため
+
+役割（skills-core / skills-provider など）は論理的分類であり、  
+最終的にどのパスへ配置されるかとは直接対応しない。
+
+そのため：
+
+- 同一パスへ複数の役割から出力される可能性がある
+- リポジトリ分割と実行結果の関係が直感的でなくなる
+
+#### 3. path / 権限境界は物理配置と直接対応するため
+
+path および権限境界を基準とすることで：
+
+- 「どこに配置されるか」と「どのリポジトリか」が一致する
+- 配付単位が明確になる
+- CI / 権限管理との整合性が取れる
+
+#### 4. 役割の可読性は他の手段で担保可能
+
+役割の違いは以下で十分に表現できる：
+
+- ディレクトリ構造（例：`skills/core/`, `skills/provider/`）
+- catalog.yml の metadata
+- README 等のドキュメント
+
+したがって、物理分割に役割を持ち込む必要はない。
+
+### 補足（重要）
+
+本結論は以下を意味する：
+
+- 役割単位でのリポジトリ分割を**禁止するものではない**
+- ただし、それは主基準ではなく、必要な場合に限定される
+
+また、以下は引き続き成立する：
+
+- カタログ設計により衝突を回避することは望ましい
+- 衝突した場合でも、仕様として処理は継続される
+
+### 最終結論
+
+```text
+リポジトリ分割は path / 権限境界を主基準とする。
+役割差は物理分割ではなく、ディレクトリ構造または metadata で表現する。
+```
+
+---
 
 ## 質問3: `skills-provider` と `adapter-layer` の境界をどこで切るか
 
@@ -101,6 +226,12 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 - `adapter-layer` は Bash / PowerShell、Linux / Windows、ファイルパス差分のような下位吸収に限定した方が再利用性が高い。
 - この分け方なら依存方向を `skill -> adapter` に固定でき、逆流しにくい。
 
+## 回答
+
+① provider 固有の業務操作は `skills-provider`、OS / shell / path 差分は `adapter-layer` に限定する
+
+---
+
 ## 質問4: `skills-*` と `mcp-tools` の境界をどう定義するか
 
 ### 未確定事項
@@ -130,6 +261,12 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 - `mcp-server-core` は「安全に呼び出せる部品」を提供し、skill は「部品の使い方」を表す方が自然である。
 - この分割なら `mcp-tools -> adapter-layer`、`skills-* -> mcp-tools` の依存方向を崩しにくい。
 - issue で求められている「実行時責務と定義時責務の分離」にも合う。
+
+## 回答
+
+① `mcp-tools` は基本操作、`skills-*` は複数 tool を束ねた利用者向け能力に限定する
+
+---
 
 ## 質問5: `infra-runtime` を配付対象に含めるなら、何まで入れてよいか
 
@@ -163,6 +300,8 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 - Secret 実値は `infra-runtime` に入れず、Vault / GitHub Secrets / 環境変数など別経路で注入する方が責務が明確である。
 - `infra-runtime` を完全に除外すると、deploy 定義だけ version 固定の枠外に落ちるため、管理がぶれやすい。
 
+---
+
 ## 質問6: `skill-catalog` は配付 repo なのか、設計用のメタレジストリなのか
 
 ### 未確定事項
@@ -195,6 +334,29 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 - 「実行するもの」と「選ぶための情報」を分けることで、実行時責務と定義時責務を分離できる。
 - もし metadata 専用に寄せるなら、命名変更は別の設計判断事項として切り出し、`skill-catalog` のまま続けるかを別途決めた方が論点を混ぜにくい。
 
+## 回答
+
+① `skill-catalog` は metadata 専用の索引リポジトリにし、target repo へは配らない
+
+```
+flowchart TD
+  A[User Input]
+  B[Planner]
+  C[Skill Catalog]
+  D[Plan]
+  E[Executor]
+  F[MCP]
+  
+  A --> B
+  B --> C
+  C --> B
+  B --> D
+  D --> E
+  E --> F
+```
+
+---
+
 ## 質問7: include 基準を `set.yml` 相対に統一するか、層ごとに別ルールを残すか
 
 ### 未確定事項
@@ -224,6 +386,12 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 - set 定義ファイルを動かすときに、そのファイル自身を基準に読めるため、repo 分割後も理解しやすい。
 - `ssot-sync-controller` の include 展開ロジックを 1 パターンに寄せられる。
 - `ssot-core`、`mcp-tools`、`infra-runtime` のように repo が増えても、書き方が変わらない。
+
+### 回答
+
+③ 層ごとに別ルールを維持する
+
+---
 
 ## 質問8: 複数 repo の version 組み合わせ表を誰が持つか
 
@@ -255,6 +423,12 @@ role 単位で細かく分けても、target repo の同じパスへ置くなら
 - version 固定と手動 rollback の方針を崩さずに、判断材料だけを整備できる。
 - 配付時ではなく設計時に整合性を見ることで、実行時の複雑化を避けられる。
 
+### 回答
+
+③ target repo 側で完全手動管理にする
+
+---
+
 ## 質問9: `allowed-paths.yml` の変更権限をどこに置くか
 
 ### 未確定事項
@@ -284,3 +458,9 @@ catalog 側で自由に path を増やせると、危険な場所まで配付範
 - path の許可は機能追加ではなくセキュリティ判断なので、catalog 側に自己申告させない方が安全である。
 - `ssot-sync-controller` が「どこに書けるか」の最終門番である方が、責務境界が明確になる。
 - 新 path 追加時に controller 側 PR が必要でも、危険な path 拡張を防げるメリットの方が大きい。
+
+### 回答
+
+① `allowed-paths.yml` は `ssot-sync-controller` に中央集約し続ける
+
+---
