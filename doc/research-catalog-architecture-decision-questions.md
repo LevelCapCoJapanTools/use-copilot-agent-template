@@ -472,9 +472,9 @@ catalog 側で自由に path を増やせると、危険な場所まで配布範
 ### 未確定事項
 
 #### 問題
-質問1の回答では、SSOT を `ssot-core` / `ssot-schema` / `ssot-policies` の3軸に分ける方針が示されている。  
-一方で質問2の回答では、物理 repo 分割の主基準は `path / 権限境界` だとしている。  
-この2つを同時に採用すると、たとえば `.github/copilot/00-index.md`、`.github/instructions/**`、`40-testing-strategy.md`、`50-security.md` のような同一 target path に対して、複数軸から配布する場面が発生しうる。  
+質問1の回答セクションでは、推奨案とは別の選択肢として、SSOT を `ssot-core` / `ssot-schema` / `ssot-policies` の3軸に分ける案が示されている。  
+一方で質問2の回答セクションでは、物理 repo 分割の主基準は `path / 権限境界` だとしている。  
+この「質問1の回答セクションにある3軸案」と「質問2の回答セクション」を同時に採用すると、たとえば `.github/copilot/00-index.md`、`.github/instructions/**`、`40-testing-strategy.md`、`50-security.md` のような同一 target path に対して、複数軸から配布する場面が発生しうる。  
 そのとき「どの軸が優先されるか」が未定義である。
 
 #### 何が何に影響するか
@@ -486,12 +486,12 @@ catalog 側で自由に path を増やせると、危険な場所まで配布範
 
 | 選択肢 | 内容 | 特徴 |
 | --- | --- | --- |
-| ① 軸ごとに専有 path を持たせ、同じ target path へは出力しない（推奨） | `ssot-core` / `ssot-schema` / `ssot-policies` が担当ファイルを分担する | 3軸分割と path 基準を両立しやすい |
+| ① 論理分割または物理分割した軸ごとに担当ファイルを分担し、同じ target path へは出力しない（推奨） | `ssot-core` / `ssot-schema` / `ssot-policies` が担当ファイルを分担する | 質問1の推奨案と回答案のどちらでも使える整理になる |
 | ② 3軸の優先順を固定し、同一 path ではその順で後勝ちにする | 例: `core -> schema -> policies` | 実装は簡単だが、暗黙の上書きが増える |
 | ③ target repo 側で merge する前提にし、catalog は部分ファイルだけを持つ | controller は断片を集めるだけにする | 仕組みが大きく変わり、現行仕様から離れる |
 
 #### 推奨
-① 軸ごとに専有 path を持たせ、同じ target path へは出力しない
+① 論理分割または物理分割した軸ごとに担当ファイルを分担し、同じ target path へは出力しない
 
 ##### 理由
 - 質問1の「3軸を独立した軸として扱う」と、質問2の「path / 権限境界を主基準にする」を両立しやすい。
@@ -503,7 +503,7 @@ catalog 側で自由に path を増やせると、危険な場所まで配布範
 ### 未確定事項
 
 #### 問題
-質問1の回答では、`ssot-schema` は `.github/instructions/**` を担当し、`ssot-policies` は `40-testing-strategy.md` や `50-security.md` を set 指定で変えられる想定が示されている。  
+質問1の回答セクション（選択肢②の説明例）では、`ssot-schema` は `.github/instructions/**` を担当し、`ssot-policies` は `40-testing-strategy.md` や `50-security.md` を set 指定で変えられる想定が示されている。  
 しかし、何を「丸ごと差し替える」のか、どこを「選択的に変える」のか、まだ定義されていない。  
 たとえば `00-index.md` の参照順や `50-security.md` の内容を変えるなら、target repo 側では「どの set が効いているか」を追跡できる必要がある。
 
@@ -533,9 +533,10 @@ catalog 側で自由に path を増やせると、危険な場所まで配布範
 ### 未確定事項
 
 #### 問題
-質問6の回答では `skill-catalog` は配布しない索引リポジトリとされ、質問8の回答では version 組み合わせは target repo 側で完全手動管理とされている。  
-この2つを並べると、`skill-catalog` は存在するが、実際に誰が・いつ・どの手順で使うのかが曖昧になる。  
-質問6の図では Planner が `skill-catalog` を参照しているが、その責務が本文ではまだ固定されていない。
+質問6の回答では `skill-catalog` は配布しない索引リポジトリとされている。  
+一方で質問8には、推奨の「DESIGN 時に推奨 version tuple を参照する」と、別選択肢としての「target repo 側で完全手動管理」が並んでいる。  
+この状態だと、`skill-catalog` は存在するが、実際に誰が・いつ・どの手順で使うのかが曖昧になる。  
+質問6の回答セクションにある図では Planner が `skill-catalog` を参照しているが、その責務が本文ではまだ固定されていない。
 
 #### 何が何に影響するか
 この判断は DESIGN Issue の作り方、Planner の責務、target repo 側の version 更新手順に影響する。  
@@ -563,9 +564,9 @@ catalog 側で自由に path を増やせると、危険な場所まで配布範
 ### 未確定事項
 
 #### 問題
-質問7の回答では、include 基準は「層ごとに別ルールを維持する」となっている。  
-しかし質問1の回答で SSOT を3軸化すると、SSOT 内でも repo が増える。  
-この状態で SSOT / Skills / MCP / 追加の索引 repo がそれぞれ別の include 基準を持つと、`ssot-sync-controller` は repo 種別ごとに path 解決ルールを持つ必要がある。  
+質問7の選択肢③および回答では、include 基準は「層ごとに別ルールを維持する」となっている。  
+しかし質問1の回答案のように SSOT を3軸化する場合は、SSOT 内でも論理的な管理単位が増える。  
+この状態で SSOT / Skills / MCP / 追加の索引 repo がそれぞれ別の include 基準を持つと、`ssot-sync-controller` は repo 種別または論理単位ごとに path 解決ルールを持つ必要がある。  
 その複雑性をどこまで許容するかが未確定である。
 
 #### 何が何に影響するか
