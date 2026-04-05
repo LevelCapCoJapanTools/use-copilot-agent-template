@@ -89,6 +89,7 @@
 * **`AGENTS.md`**
 * **`CLAUDE.md`**
 * **`GEMINI.md`**
+* **`.agent.md`**
 
 ## 3.5 `.github/**` の扱い
 
@@ -205,7 +206,9 @@
 * 配付方式は変えず、catalog path をそのまま target repo にコピーする
 * 物理 repo の主基準は **path / 権限境界** とする
 * 役割名による細分化は採用してよいが、**同じ target path を複数 repo で共有しない**
-* 共通入口ファイルは **`ssot-core` が管理し、他 repo は `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` / `.github/copilot/00-index.md` と同じ target path に配置しない**
+* 1 つの SSOT セットの中に、**Copilot / Claude / GeminiCLI / Cursor / Codex** 向け入口 path をまとめて持たせてよい
+* AI 別入口 path は **`ssot-core` が一元管理**する
+* 他 repo は、`catalog-path-ownership-draft.md` の「対応する AI と主入口 path」および「補助入口 / 参照入口」に載る path と同じ target path に配置しない
 * `skill-catalog` と `test-simulation` は **配付対象ではなく**、DESIGN / 検証時のみ使う
 * `adapter-layer` は `skills-*` / `mcp-*` の下位で OS / shell / path 差分だけを吸収する補助 repo とする
 
@@ -455,17 +458,19 @@ chore(ssot): sync ssot-core@v1.2.3 [20260404-120001]
 
 ```yaml
 # ssot-sync-controller/config/allowed-paths.yml
-allowed:
-  - docs/**
-  - .github/copilot/**
-  - .github/copilot-instructions.md
-  - .github/instructions/**
-  - .github/agents/**
-  - .github/PULL_REQUEST_TEMPLATE/ssot-sync.md
-  - .claude/**
-  - AGENTS.md
-  - CLAUDE.md
-  - GEMINI.md
+  allowed:
+    - docs/**
+    - .github/copilot/**
+    - .github/copilot-instructions.md
+    - .github/instructions/**
+    - .github/agents/**
+    - .cursor/rules/**
+    - .github/PULL_REQUEST_TEMPLATE/ssot-sync.md
+    - .claude/**
+    - .agent.md
+    - AGENTS.md
+    - CLAUDE.md
+    - GEMINI.md
 ```
 
 ## 13.3 ルール
@@ -475,7 +480,7 @@ allowed:
 * 既存ファイルは上書き
 * 不要ファイルは削除
 * ホワイトリスト配下は **完全同期領域**
-* ルート直下 `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` も完全支配対象
+* ルート直下 `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` / `.agent.md` も完全支配対象
 * `.github/workflows/**` は**非対象**であり、ホワイトリストに含めない
 
 ## 13.4 実質意味
@@ -564,6 +569,10 @@ ssot-core/
     AGENTS.md
     CLAUDE.md
     GEMINI.md
+    .agent.md
+    .github/copilot-instructions.md
+    .cursor/rules/
+      ...
     .github/copilot/
       ...
 ssot-schema/
@@ -581,7 +590,7 @@ ssot-policies/
 
 ## 16.1.1 責任分担
 
-* `ssot-core` は共通入口ファイルの最終責任者とする
+* `ssot-core` は AI 別入口ファイル群の最終責任者とする
 * `ssot-schema` / `ssot-policies` は**担当ファイルを丸ごと差し替える単位**として扱う
 * 1 ファイルの一部だけを複数 repo から合成しない
 * 例: `40-testing-strategy.md` を `ssot-policies` が担当する場合、そのファイル全体を管理し、章単位の部分上書きは行わない
@@ -597,6 +606,9 @@ include:
   - AGENTS.md
   - CLAUDE.md
   - GEMINI.md
+  - .agent.md
+  - .github/copilot-instructions.md
+  - .cursor/rules/**
   - docs/**
 ```
 
@@ -866,7 +878,7 @@ include:
 | Skills include 基準 | catalog ルート基準                                            |
 | MCP include 基準    | catalog ルート基準                                            |
 | Skills / MCP コピー先 | catalog path をそのまま保持                                     |
-| ルート指示ファイル名        | `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`                  |
+| AI 別入口 path          | `catalog-path-ownership-draft.md` を参照 |
 | SSOT 物理分割         | `ssot-core` / `ssot-schema` / `ssot-policies`（同一 path 共有禁止） |
 | 共通入口ファイル責任者      | `ssot-core`                                               |
 | skills / provider / domain | 役割分割。ただし path / 権限境界を主基準とする                     |
