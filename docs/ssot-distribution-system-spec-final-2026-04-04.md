@@ -667,7 +667,9 @@ distribution_root: ../../react-app
 
 ## 17.4 コピー規則
 
-* 選択した 1 set の `distribution_root` が指すディレクトリ配下のファイル / ディレクトリ全体（`.` で始まるファイル / ディレクトリを含む）を、相対パスを保ったまま再帰的に target repo ルートへ展開する
+* 対象範囲は、選択した 1 set の `distribution_root` が指すディレクトリ配下のファイル / ディレクトリ全体（`.` で始まるファイル / ディレクトリを含む）とする
+* 展開先は target repo ルートとする
+* `distribution_root` 配下の相対パスは、そのまま保持して再帰的に展開する
 * たとえば `distribution_root: ../../react-app` の場合、`react-app/AGENTS.md` は target repo の `AGENTS.md` として配置する
 * 同じく `react-app/.github/copilot/00-index.md` は target repo の `.github/copilot/00-index.md` として配置する
 * `ssot-core` では複数 set を同時適用しないため、set 間 collision や後勝ち議論は不要とする
@@ -912,7 +914,8 @@ include:
 | version           | 固定                                                       |
 | rollback          | 手動                                                       |
 | repo 設定           | `ssot-bot.yml` 最小構成                                      |
-| set 定義            | 一般 SSOT catalog: YAML / include only / glob only、`ssot-core`: `sets/<set-name>/set.yml` + `distribution_root` |
+| set 定義（一般 SSOT catalog） | YAML / include only / glob only                          |
+| set 定義（`ssot-core`） | `sets/<set-name>/set.yml` + `distribution_root`         |
 | set 依存            | 禁止                                                       |
 | include 評価        | 上から順                                                     |
 | 重複                | dedupe                                                   |
