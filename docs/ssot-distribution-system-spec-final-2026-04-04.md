@@ -596,6 +596,8 @@ ssot-policies/
       50-security.md
 ```
 
+`ssot-core` の `sets/<set-name>/set.yml` の書式は 16.3.1 に示す。
+
 ## 16.1.1 責任分担
 
 * `ssot-core` は AI 別入口ファイル群の最終責任者とする
@@ -605,6 +607,7 @@ ssot-policies/
 
 ## 16.1.2 `ssot-core` 専用ルール
 
+* ここでいう完成物プロファイルとは、project 全体の入口ファイルや `.github/` / `.cursor/` を含む**配付可能な完成状態**を指す
 * `ssot-core` のセット定義は `sets/<set-name>/set.yml` に置く
 * target repo へ配る実体ファイルは `<set-name>/` 直下を完成物ルートとして置く
 * `ssot-core` のセットは、`ssot-schema` / `ssot-policies` のような include 列挙型の部品集合ではなく、**選択したセットの `distribution_root` 配下を完全な形で配付する完成物プロファイル**として扱う
@@ -651,6 +654,7 @@ include:
 
 * `ssot-core` は、選択した 1 セットの `distribution_root` が指すディレクトリ配下のファイル / ディレクトリ全体を、相対パスを保ったまま再帰的に target repo ルートへ展開する
 * したがって `react-app/AGENTS.md` は target repo の `AGENTS.md` として配置する
+* 同様に `react-app/.github/copilot/00-index.md` は target repo の `.github/copilot/00-index.md` として配置する
 * `ssot-core` では複数セット併用を前提にしないため、set 間 collision や後勝ち議論は不要とする
 * `ssot-schema` / `ssot-policies` は include に列挙された path を、その**相対位置のまま** target repo に置く
 * `ssot-schema` / `ssot-policies` では ssot-sync-controller 側で path remap はしない
