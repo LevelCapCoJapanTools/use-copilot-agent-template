@@ -666,6 +666,8 @@ version: 1
 distribution_root: ../../react-app
 ```
 
+この `../../react-app` は `sets/<set-name>/set.yml` を起点に解決する。
+
 * `distribution_root` は `set.yml` からの相対パスで解決する
 * `distribution_root` が指すディレクトリを、target repo への展開起点とする
 * `ssot-core` では配付時の展開起点を `distribution_root` が指すディレクトリとし、一般 SSOT catalog のような `set.yml` 配置ディレクトリ基準の include 解決は行わない
@@ -678,7 +680,7 @@ distribution_root: ../../react-app
 * たとえば `distribution_root: ../../react-app` の場合、`react-app/AGENTS.md` は target repo の `AGENTS.md` として配置する
 * 同じく `react-app/.github/copilot/00-index.md` は target repo の `.github/copilot/00-index.md` として配置する
 * `ssot-core` では複数 set を同時適用しないため、set 間 collision や後勝ち議論は不要とする
-* `ssot-core` の path ルールは、16 章で定義した一般 SSOT catalog の `set.yml` 基準ルールの例外であり、selected set の `distribution_root` 基準で target repo に展開する
+* `ssot-core` の path ルールは 16 章の一般 SSOT catalog ルールの例外であり、selected set の `distribution_root` を基準に target repo へ展開する
 
 ## 17.5 カスタマイズ方針
 
