@@ -204,7 +204,7 @@
 ## 6.1 細分化後の基本ルール
 
 * 配付方式は原則として、catalog path をそのまま target repo にコピーする
-* ただし、`ssot-core` だけは専用ルールとし、選択したセットの配付物ルート配下を target repo ルートへ展開する
+* ただし、`ssot-core` だけは専用ルールとし、選択したセットの `distribution_root`（配付物ルート）配下を target repo ルートへ展開する
 * 物理 repo の主基準は **path / 権限境界** とする
 * 役割名による細分化は採用してよいが、**同じ target path を複数 repo で共有しない**
 * 1 つの SSOT セットの中に、**Copilot / Claude / GeminiCLI / Cursor / Codex** 向け入口 path をまとめて持たせてよい
@@ -562,7 +562,7 @@ chore(ssot): sync ssot-core@v1.2.3 [20260404-120001]
 
 SSOT は `ssot-core` / `ssot-schema` / `ssot-policies` に細分化してよい。  
 ただし、**同じ target path を複数 repo で共有しない**ことを前提とする。
-また、`ssot-core` は `ssot-schema` / `ssot-policies` と同列の generic catalog ではなく、**完成物プロファイルを配る専用 catalog**として扱う。
+また、`ssot-core` は `ssot-schema` / `ssot-policies` と同列の generic catalog ではなく、**選択した 1 セットを target repo へそのまま展開する完成物プロファイルを配る専用 catalog**として扱う。
 
 ```text
 ssot-core/
@@ -607,7 +607,7 @@ ssot-policies/
 
 * `ssot-core` のセット定義は `sets/<set-name>/set.yml` に置く
 * target repo へ配る実体ファイルは `<set-name>/` 直下を完成物ルートとして置く
-* `ssot-core` のセットは部品集合ではなく、**選択したセットの配付物ルート配下を完全な形で配付する完成物プロファイル**として扱う
+* `ssot-core` のセットは、`ssot-schema` / `ssot-policies` のような include 列挙型の部品集合ではなく、**選択したセットの `distribution_root` 配下を完全な形で配付する完成物プロファイル**として扱う
 * `ssot-core` は **1 回の利用で 1 セットのみ**を選ぶ
 * `ssot-core` は controller 実装を知らなくても、`<set-name>/` ディレクトリが配付完成物の構造を直接反映すると分かる構造を優先する
 * `react-app/AGENTS.md` と `backend-app/AGENTS.md` のように、**代替セット配下に同名ファイルが存在すること自体は許容**する
@@ -623,7 +623,7 @@ ssot-policies/
 
 ### 16.3.1 `ssot-core` の `set.yml`
 
-`ssot-core` は generic な include list ではなく、**完成物ルートを指す定義**として扱う。
+`ssot-core` は generic な include list ではなく、**`distribution_root` で指定される配付物ルートを指す定義**として扱う。
 
 ```yaml
 version: 1
@@ -649,7 +649,7 @@ include:
 
 ## 16.5 コピー規則
 
-* `ssot-core` は、選択した 1 セットの `distribution_root` **配下の中身を** target repo ルートへ展開する
+* `ssot-core` は、選択した 1 セットの `distribution_root` が指すディレクトリ配下のファイル / ディレクトリ全体を、相対パスを保ったまま再帰的に target repo ルートへ展開する
 * したがって `react-app/AGENTS.md` は target repo の `AGENTS.md` として配置する
 * `ssot-core` では複数セット併用を前提にしないため、set 間 collision や後勝ち議論は不要とする
 * `ssot-schema` / `ssot-policies` は include に列挙された path を、その**相対位置のまま** target repo に置く
