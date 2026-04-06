@@ -563,6 +563,7 @@ chore(ssot): sync ssot-core@v1.2.3 [20260404-120001]
 SSOT は `ssot-core` / `ssot-schema` / `ssot-policies` に細分化してよい。  
 ただし、**同じ target path を複数 repo で共有しない**ことを前提とする。
 また、`ssot-core` は `ssot-schema` / `ssot-policies` と同列の generic catalog ではなく、**選択した 1 セットを target repo へそのまま展開する専用 catalog**として扱う（詳細は 16.1.2 を参照）。
+本章でいう完成物プロファイルとは、project 全体の入口ファイルや `.github/` / `.cursor/` を含み、**target repo へ配置後に追加の path remap や merge を要さず AI agent が参照できる最終状態**を指す。
 
 ```text
 ssot-core/
@@ -607,7 +608,6 @@ ssot-policies/
 
 ## 16.1.2 `ssot-core` 専用ルール
 
-* ここでいう完成物プロファイルとは、project 全体の入口ファイルや `.github/` / `.cursor/` を含み、**target repo へ配置後に追加の path remap や merge を要さず AI agent が参照できる最終状態**を指す
 * `ssot-core` のセット定義は `sets/<set-name>/set.yml` に置く
 * target repo へ配る実体ファイルは `<set-name>/` 直下を完成物ルートとして置く
 * 前述のとおり、`ssot-core` のセットは `ssot-schema` / `ssot-policies` のような include 列挙型の部品集合ではなく、**選択したセットの `distribution_root` 配下を完全な形で配付する完成物プロファイル**として扱う
@@ -626,7 +626,7 @@ ssot-policies/
 
 ### 16.3.1 `ssot-core` の `set.yml`
 
-`ssot-core` は generic な include list ではなく、**`distribution_root` で指定されるディレクトリ配下の全ファイルを、相対パスを保ったまま target repo ルートへ展開するための起点**として扱う。
+`ssot-core` は generic な include list ではなく、**`distribution_root` で target repo への展開起点ディレクトリを示す定義**として扱う。
 
 ```yaml
 version: 1
@@ -653,8 +653,8 @@ include:
 ## 16.5 コピー規則
 
 * `ssot-core` は、選択した 1 セットの `distribution_root` が指すディレクトリ配下のファイル / ディレクトリ全体（`.` で始まるファイル / ディレクトリを含む）を、相対パスを保ったまま再帰的に target repo ルートへ展開する
-* したがって `react-app/AGENTS.md` は target repo の `AGENTS.md` として配置する
-* 同様に `react-app/.github/copilot/00-index.md` は target repo の `.github/copilot/00-index.md` として配置する
+* たとえば `distribution_root: ../../react-app` の場合、`react-app/AGENTS.md` は target repo の `AGENTS.md` として配置する
+* 同じく `react-app/.github/copilot/00-index.md` は target repo の `.github/copilot/00-index.md` として配置する
 * `ssot-core` では複数セット併用を前提にしないため、set 間 collision や後勝ち議論は不要とする
 * `ssot-schema` / `ssot-policies` は include に列挙された path を、その**相対位置のまま** target repo に置く
 * `ssot-schema` / `ssot-policies` では ssot-sync-controller 側で path remap はしない
