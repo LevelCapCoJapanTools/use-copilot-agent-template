@@ -560,7 +560,7 @@ chore(ssot): sync ssot-core@v1.2.3 [20260404-120001]
 
 ## 16.1 配置方針
 
-SSOT は `ssot-core` / `ssot-schema` / `ssot-policies` に細分化してよい。  
+一般 SSOT catalog は `ssot-schema` / `ssot-policies` に細分化してよい。  
 ただし、**同じ target path を複数 repo で共有しない**ことを前提とする。
 
 ```text
@@ -663,7 +663,7 @@ distribution_root: ../../react-app
 
 * `distribution_root` は `set.yml` からの相対パスで解決する
 * `distribution_root` が指すディレクトリを、target repo への展開起点とする
-* `ssot-core` では set.yml の基準パスを set 定義ディレクトリではなく、`distribution_root` が指す配付対象ディレクトリとして解釈する
+* `ssot-core` では配付時の展開起点を `distribution_root` が指すディレクトリとし、一般 SSOT catalog のような `set.yml` 配置ディレクトリ基準の include 解決は行わない
 
 ## 17.4 コピー規則
 
@@ -912,7 +912,7 @@ include:
 | version           | 固定                                                       |
 | rollback          | 手動                                                       |
 | repo 設定           | `ssot-bot.yml` 最小構成                                      |
-| set 定義            | 一般 catalog: YAML / include only / glob only、`ssot-core`: `sets/<set-name>/set.yml` + `distribution_root` |
+| set 定義            | 一般 SSOT catalog: YAML / include only / glob only、`ssot-core`: `sets/<set-name>/set.yml` + `distribution_root` |
 | set 依存            | 禁止                                                       |
 | include 評価        | 上から順                                                     |
 | 重複                | dedupe                                                   |
