@@ -89,6 +89,7 @@
 * **`AGENTS.md`**
 * **`CLAUDE.md`**
 * **`GEMINI.md`**
+* **`.agent.md`**
 
 ## 3.5 `.github/**` の扱い
 
@@ -181,17 +182,41 @@
 
 # 6. リポジトリ一覧
 
-| repo               | 役割                                 |
-| ------------------ | ---------------------------------- |
-| `ssot-sync-controller`        | 中央同期ロジック                           |
-| `ssot-bot`       | GitHub 操作の認証主体                     |
-| `ssot-catalog`     | SSOT 実体とセット定義                      |
-| `skills-*-catalog` | Skills 実体とセット定義。出力先構造が異なる系統ごとに物理分割 |
-| `mcp-*-catalog`    | MCP 実体とセット定義。出力先構造が異なる系統ごとに物理分割    |
-| `template-repo`    | 新規 repo 雛形                         |
-| `target repos`     | 実案件 repo                           |
+| repo | 役割 |
+| --- | --- |
+| `ssot-sync-controller` | 中央同期ロジック |
+| `ssot-bot` | GitHub 操作の認証を担当する実行主体 |
+| `ssot-core` | AI 共通ルール、入口ファイル、共通 SSOT 実体 |
+| `ssot-schema` | Plan / Skill / Tool の設計スキーマ、および運用ルール系 SSOT |
+| `ssot-policies` | セキュリティ、禁止事項、環境制約などのポリシー系 SSOT |
+| `skills-core` | 汎用スキル実体とセット定義 |
+| `skills-provider` | provider 差分を持つスキル実体とセット定義 |
+| `skills-domain` | ドメイン固有スキル実体とセット定義 |
+| `mcp-server-core` | MCP 実行基盤の実体とセット定義 |
+| `mcp-tools` | MCP tool 定義の実体とセット定義 |
+| `infra-runtime` | 非機密の runtime 定義、deploy 手順、IaC template |
+| `adapter-layer` | OS / shell / path 差分吸収用の補助レイヤ |
+| `skill-catalog` | DESIGN 時にだけ参照する索引リポジトリ |
+| `test-simulation` | DESIGN / 検証時に使う dry-run / fault injection 資産 |
+| `template-repo` | 新規 repo 雛形 |
+| `target repos` | 実案件 repo |
 
-> 旧版での `skills-catalog` / `mcp-catalog` は**論理名**であり、最終設計では、出力構造が異なる系統は物理 repo を分割する。
+## 6.1 細分化後の基本ルール
+
+* 配付方式は変えず、catalog path をそのまま target repo にコピーする
+* 物理 repo の主基準は **path / 権限境界** とする
+* 役割名による細分化は採用してよいが、**同じ target path を複数 repo で共有しない**
+* 1 つの SSOT セットの中に、**Copilot / Claude / GeminiCLI / Cursor / Codex** 向け入口 path をまとめて持たせてよい
+* AI 別入口 path は **`ssot-core` が一元管理**する
+* 他 repo は、`catalog-path-ownership-draft.md` の「対応する AI と主入口 path」および「補助入口 / 参照入口」に載る path と同じ target path に配置しない
+* `skill-catalog` と `test-simulation` は **配付対象ではなく**、DESIGN / 検証時のみ使う
+* `adapter-layer` は `skills-*` / `mcp-*` の下位で OS / shell / path 差分だけを吸収する補助 repo とする
+
+## 6.2 担当 path の最小固定範囲
+
+* すべての path を最初に固定する必要はない
+* ただし、`.github/` 配下や入口ファイルなど、衝突しやすい path は先に担当 repo を固定する
+* 初期ドラフトは `catalog-path-ownership-draft.md` に表形式でまとめる
 
 ---
 
@@ -433,17 +458,19 @@ chore(ssot): sync ssot-core@v1.2.3 [20260404-120001]
 
 ```yaml
 # ssot-sync-controller/config/allowed-paths.yml
-allowed:
-  - docs/**
-  - .github/copilot/**
-  - .github/copilot-instructions.md
-  - .github/instructions/**
-  - .github/agents/**
-  - .github/PULL_REQUEST_TEMPLATE/ssot-sync.md
-  - .claude/**
-  - AGENTS.md
-  - CLAUDE.md
-  - GEMINI.md
+  allowed:
+    - docs/**
+    - .github/copilot/**
+    - .github/copilot-instructions.md
+    - .github/instructions/**
+    - .github/agents/**
+    - .cursor/rules/**
+    - .github/PULL_REQUEST_TEMPLATE/ssot-sync.md
+    - .claude/**
+    - .agent.md
+    - AGENTS.md
+    - CLAUDE.md
+    - GEMINI.md
 ```
 
 ## 13.3 ルール
@@ -453,7 +480,7 @@ allowed:
 * 既存ファイルは上書き
 * 不要ファイルは削除
 * ホワイトリスト配下は **完全同期領域**
-* ルート直下 `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` も完全支配対象
+* ルート直下 `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` / `.agent.md` も完全支配対象
 * `.github/workflows/**` は**非対象**であり、ホワイトリストに含めない
 
 ## 13.4 実質意味
@@ -532,18 +559,41 @@ allowed:
 
 ## 16.1 配置方針
 
-SSOT は**セットごとにディレクトリを切る**。
+SSOT は `ssot-core` / `ssot-schema` / `ssot-policies` に細分化してよい。  
+ただし、**同じ target path を複数 repo で共有しない**ことを前提とする。
 
 ```text
-ssot-catalog/
+ssot-core/
   react-app/
     set.yml
     AGENTS.md
     CLAUDE.md
     GEMINI.md
-    docs/
+    .agent.md
+    .github/copilot-instructions.md
+    .cursor/rules/
       ...
+    .github/copilot/
+      ...
+ssot-schema/
+  agile/
+    set.yml
+    .github/instructions/
+      ...
+ssot-policies/
+  rentalserver/
+    set.yml
+    .github/copilot/
+      40-testing-strategy.md
+      50-security.md
 ```
+
+## 16.1.1 責任分担
+
+* `ssot-core` は AI 別入口ファイル群の最終責任者とする
+* `ssot-schema` / `ssot-policies` は**担当ファイルを丸ごと差し替える単位**として扱う
+* 1 ファイルの一部だけを複数 repo から合成しない
+* 例: `40-testing-strategy.md` を `ssot-policies` が担当する場合、そのファイル全体を管理し、章単位の部分上書きは行わない
 
 ## 16.2 セット定義ファイル名
 
@@ -556,6 +606,9 @@ include:
   - AGENTS.md
   - CLAUDE.md
   - GEMINI.md
+  - .agent.md
+  - .github/copilot-instructions.md
+  - .cursor/rules/**
   - docs/**
 ```
 
@@ -567,6 +620,7 @@ include:
 
 * include に列挙された path を、その**相対位置のまま** target repo に置く
 * ssot-sync-controller 側で path remap はしない
+* `ssot-core` / `ssot-schema` / `ssot-policies` 間で同じ target path を共有しない
 
 ---
 
@@ -577,8 +631,9 @@ include:
 * 出力先構造が異なる系統は、**物理的に catalog repo を分ける**
 * 例:
 
-  * `skills-copilot-catalog`
-  * `skills-claude-catalog`
+  * `skills-core`
+  * `skills-provider`
+  * `skills-domain`
 
 > ここで重要なのは、**ssot-sync-controller が AI 種別ごとに path remap しない**こと。
 > 出力先 path の違いは、catalog repo 側の構造で表現する。
@@ -586,7 +641,7 @@ include:
 ## 17.2 配置方針
 
 ```text
-skills-xxx-catalog/
+skills-core/
   sets/
     frontend-ui.yml
     backend-php.yml
@@ -622,6 +677,13 @@ include:
 * **catalog の path をそのまま保持して** target repo に置く
 * ssot-sync-controller は path remap しない
 
+## 17.7 Skills の責務境界
+
+* `skills-core` は汎用スキルを持つ
+* `skills-provider` は provider 固有の業務操作を持つ
+* `skills-domain` はアプリ固有の操作を持つ
+* `adapter-layer` は OS / shell / path 差分吸収に限定し、provider 固有の業務操作は持たない
+
 ---
 
 # 18. MCP catalog 設計
@@ -631,13 +693,13 @@ include:
 * Skills と同様、出力先構造が異なる系統は物理 repo を分ける
 * 例:
 
-  * `mcp-basic-catalog`
-  * `mcp-provider-x-catalog`
+  * `mcp-server-core`
+  * `mcp-tools`
 
 ## 18.2 配置方針
 
 ```text
-mcp-xxx-catalog/
+mcp-tools/
   sets/
     basic.yml
     full.yml
@@ -673,6 +735,14 @@ include:
 * **catalog の path をそのまま保持して** target repo に置く
 * ssot-sync-controller は path remap しない
 
+## 18.7 補助 repo の扱い
+
+* `infra-runtime` は非機密の runtime 定義、deploy 手順、IaC template だけを持つ
+* `infra-runtime` に secret 実値は含めない
+* `adapter-layer` は実行差分吸収の補助 repo とし、target path は `skills-*` / `mcp-*` と重ねない
+* `skill-catalog` は DESIGN 時に Planner だけが参照する索引 repo であり、配付対象ではない
+* `test-simulation` は DESIGN / 検証時の dry-run / fault injection 資産であり、標準の配付対象ではない
+
 ---
 
 # 19. カタログ品質と衝突方針
@@ -687,6 +757,17 @@ include:
 * 同一対象に複数入力が来た場合は **後勝ち**
 * ssot-sync-controller はそのままストリーム評価する
 * 衝突防止ロジックは持たない
+
+## 19.2.1 設計時の確認
+
+* 後勝ちは**例外時の逃げ道**であり、平常運用で前提にしない
+* Planner は DESIGN 時に、repo 間の内容相性を確認する
+* `skill-catalog` のような索引 repo は DESIGN 時だけ参照し、controller は実行時に参照しない
+
+## 19.2.2 path 担当の最小固定
+
+* 入口ファイルや `.github/` 配下など、衝突しやすい path は先に担当 repo を固定する
+* 初期ドラフトは `catalog-path-ownership-draft.md` を参照する
 
 ## 19.3 意味
 
@@ -746,6 +827,9 @@ include:
 * target repo 側からの差分逆流
 * 自動 rollback
 * 既存 PR 更新
+* `skill-catalog` の直接配付
+* `test-simulation` の標準配付
+* secret 実値を含む設定ファイルの配付
 
 ---
 
@@ -794,5 +878,10 @@ include:
 | Skills include 基準 | catalog ルート基準                                            |
 | MCP include 基準    | catalog ルート基準                                            |
 | Skills / MCP コピー先 | catalog path をそのまま保持                                     |
-| ルート指示ファイル名        | `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`                  |
-
+| AI 別入口 path          | `catalog-path-ownership-draft.md` を参照 |
+| SSOT 物理分割         | `ssot-core` / `ssot-schema` / `ssot-policies`（同一 path 共有禁止） |
+| 共通入口ファイル責任者      | `ssot-core`                                               |
+| skills / provider / domain | 役割分割。ただし path / 権限境界を主基準とする                     |
+| MCP 物理分割          | `mcp-server-core` / `mcp-tools`                          |
+| `skill-catalog`    | DESIGN 時のみ参照、配付対象外                                       |
+| `infra-runtime`    | 非機密 template / placeholder のみ配付対象                        |
