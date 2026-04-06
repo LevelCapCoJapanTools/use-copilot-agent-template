@@ -678,7 +678,7 @@ distribution_root: ../../react-app
 * たとえば `distribution_root: ../../react-app` の場合、`react-app/AGENTS.md` は target repo の `AGENTS.md` として配置する
 * 同じく `react-app/.github/copilot/00-index.md` は target repo の `.github/copilot/00-index.md` として配置する
 * `ssot-core` では複数 set を同時適用しないため、set 間 collision や後勝ち議論は不要とする
-* `ssot-core` の path ルールは、16 章で定義した一般 SSOT catalog の catalog root 基準ルールの例外であり、selected set の `distribution_root` 基準で target repo に展開する
+* `ssot-core` の path ルールは、16 章で定義した一般 SSOT catalog の `set.yml` 基準ルールの例外であり、selected set の `distribution_root` 基準で target repo に展開する
 
 ## 17.5 カスタマイズ方針
 
