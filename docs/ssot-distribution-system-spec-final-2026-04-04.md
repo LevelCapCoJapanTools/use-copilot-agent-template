@@ -619,9 +619,14 @@ include:
 
 ## 17.1 基本原則
 
+### 17.1.1 用語定義
+
+* 完成物プロファイルとは、project 全体の入口ファイルや `.github/` / `.cursor/` を含み、target repo へ配置後に追加の path remap や merge を要さず AI agent が参照できる最終状態を指す
+
+### 17.1.2 原則
+
 * `ssot-core` の set は**配付単位の唯一の単位**とする
 * `ssot-core` の set は include 列挙型の部品集合ではなく、target repo へそのまま展開できる**完成物プロファイル**とする
-* ここでいう完成物プロファイルとは、project 全体の入口ファイルや `.github/` / `.cursor/` を含み、target repo へ配置後に追加の path remap や merge を要さず AI agent が参照できる最終状態を指す
 * `ssot-core` では複数 set の同時適用を禁止し、**必ず 1 set のみ**を選択する
 * `ssot-core` の配付は controller を必須とせず、単純なファイルコピーでも成立する構造とする
 
@@ -648,7 +653,7 @@ ssot-core/
     └── ...
 ```
 
-* `sets/<set-name>/set.yml` は set 定義の置き場である
+* `sets/<set-name>/set.yml` は set 定義ファイルの配置場所である
 * `<set-name>/` 直下は target repo へ配る完成物そのものとする
 * `react-app/AGENTS.md` と `backend-app/AGENTS.md` のように、代替 set 配下に同名ファイルが存在すること自体は許容する
 
@@ -673,7 +678,7 @@ distribution_root: ../../react-app
 * たとえば `distribution_root: ../../react-app` の場合、`react-app/AGENTS.md` は target repo の `AGENTS.md` として配置する
 * 同じく `react-app/.github/copilot/00-index.md` は target repo の `.github/copilot/00-index.md` として配置する
 * `ssot-core` では複数 set を同時適用しないため、set 間 collision や後勝ち議論は不要とする
-* `ssot-core` の path ルールは catalog root 基準の一般ルールの例外であり、selected set の `distribution_root` 基準で target repo に展開する
+* `ssot-core` の path ルールは、16 章で定義した一般 SSOT catalog の catalog root 基準ルールの例外であり、selected set の `distribution_root` 基準で target repo に展開する
 
 ## 17.5 カスタマイズ方針
 
