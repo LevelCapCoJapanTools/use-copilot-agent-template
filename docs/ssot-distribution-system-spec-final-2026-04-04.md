@@ -204,7 +204,7 @@
 ## 6.1 細分化後の基本ルール
 
 * 配付方式は原則として、catalog path をそのまま target repo にコピーする
-* ただし、`ssot-core` だけは専用ルールとし、選択したセットの `distribution_root`（配付物ルート）配下を target repo ルートへ展開する
+* `ssot-core` の配付方式だけは専用ルールとし、詳細は 16.1.2 を参照する
 * 物理 repo の主基準は **path / 権限境界** とする
 * 役割名による細分化は採用してよいが、**同じ target path を複数 repo で共有しない**
 * 1 つの SSOT セットの中に、**Copilot / Claude / GeminiCLI / Cursor / Codex** 向け入口 path をまとめて持たせてよい
@@ -562,7 +562,7 @@ chore(ssot): sync ssot-core@v1.2.3 [20260404-120001]
 
 SSOT は `ssot-core` / `ssot-schema` / `ssot-policies` に細分化してよい。  
 ただし、**同じ target path を複数 repo で共有しない**ことを前提とする。
-また、`ssot-core` は `ssot-schema` / `ssot-policies` と同列の generic catalog ではなく、**選択した 1 セットを target repo へそのまま展開する完成物プロファイルを配る専用 catalog**として扱う。
+また、`ssot-core` は `ssot-schema` / `ssot-policies` と同列の generic catalog ではなく、**選択した 1 セットを target repo へそのまま展開する専用 catalog**として扱う（詳細は 16.1.2 を参照）。
 
 ```text
 ssot-core/
@@ -607,10 +607,10 @@ ssot-policies/
 
 ## 16.1.2 `ssot-core` 専用ルール
 
-* ここでいう完成物プロファイルとは、project 全体の入口ファイルや `.github/` / `.cursor/` を含む**配付可能な完成状態**を指す
+* ここでいう完成物プロファイルとは、project 全体の入口ファイルや `.github/` / `.cursor/` を含み、**target repo へ配置後に追加の path remap や merge を要さず AI agent が参照できる最終状態**を指す
 * `ssot-core` のセット定義は `sets/<set-name>/set.yml` に置く
 * target repo へ配る実体ファイルは `<set-name>/` 直下を完成物ルートとして置く
-* `ssot-core` のセットは、`ssot-schema` / `ssot-policies` のような include 列挙型の部品集合ではなく、**選択したセットの `distribution_root` 配下を完全な形で配付する完成物プロファイル**として扱う
+* 前述のとおり、`ssot-core` のセットは `ssot-schema` / `ssot-policies` のような include 列挙型の部品集合ではなく、**選択したセットの `distribution_root` 配下を完全な形で配付する完成物プロファイル**として扱う
 * `ssot-core` は **1 回の利用で 1 セットのみ**を選ぶ
 * `ssot-core` は controller 実装を知らなくても、`<set-name>/` ディレクトリが配付完成物の構造を直接反映すると分かる構造を優先する
 * `react-app/AGENTS.md` と `backend-app/AGENTS.md` のように、**代替セット配下に同名ファイルが存在すること自体は許容**する
@@ -626,7 +626,7 @@ ssot-policies/
 
 ### 16.3.1 `ssot-core` の `set.yml`
 
-`ssot-core` は generic な include list ではなく、**`distribution_root` で指定される配付物ルートを指す定義**として扱う。
+`ssot-core` は generic な include list ではなく、**`distribution_root` で指定されるディレクトリ配下の全ファイルを、相対パスを保ったまま target repo ルートへ展開するための起点**として扱う。
 
 ```yaml
 version: 1
@@ -652,7 +652,7 @@ include:
 
 ## 16.5 コピー規則
 
-* `ssot-core` は、選択した 1 セットの `distribution_root` が指すディレクトリ配下のファイル / ディレクトリ全体を、相対パスを保ったまま再帰的に target repo ルートへ展開する
+* `ssot-core` は、選択した 1 セットの `distribution_root` が指すディレクトリ配下のファイル / ディレクトリ全体（`.` で始まるファイル / ディレクトリを含む）を、相対パスを保ったまま再帰的に target repo ルートへ展開する
 * したがって `react-app/AGENTS.md` は target repo の `AGENTS.md` として配置する
 * 同様に `react-app/.github/copilot/00-index.md` は target repo の `.github/copilot/00-index.md` として配置する
 * `ssot-core` では複数セット併用を前提にしないため、set 間 collision や後勝ち議論は不要とする
@@ -912,7 +912,7 @@ include:
 | 既存 PR             | 常に新規作成                                                   |
 | PR テンプレ           | `.github/PULL_REQUEST_TEMPLATE/ssot-sync.md`             |
 | BASE64 化          | ssot-sync-controller 責務                                             |
-| SSOT include 基準   | `ssot-core`: `distribution_root` を `set.yml` 相対で解決、`ssot-schema` / `ssot-policies`: `set.yml` 相対 |
+| SSOT include 基準   | `ssot-core`: `distribution_root` を `set.yml` からの相対パスで解決、`ssot-schema` / `ssot-policies`: `set.yml` からの相対パス |
 | `ssot-core` コピー先 | 選択した 1 セットの `distribution_root` 配下を target repo ルートへ展開 |
 | Skills include 基準 | catalog ルート基準                                            |
 | MCP include 基準    | catalog ルート基準                                            |
