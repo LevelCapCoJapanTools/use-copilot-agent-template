@@ -203,7 +203,8 @@
 
 ## 6.1 細分化後の基本ルール
 
-* 配付方式は変えず、catalog path をそのまま target repo にコピーする
+* 配付方式は原則として、catalog path をそのまま target repo にコピーする
+* ただし、`ssot-core` だけは専用ルールとし、選択したセットの配付物ルート配下を target repo ルートへ展開する
 * 物理 repo の主基準は **path / 権限境界** とする
 * 役割名による細分化は採用してよいが、**同じ target path を複数 repo で共有しない**
 * 1 つの SSOT セットの中に、**Copilot / Claude / GeminiCLI / Cursor / Codex** 向け入口 path をまとめて持たせてよい
@@ -561,11 +562,16 @@ chore(ssot): sync ssot-core@v1.2.3 [20260404-120001]
 
 SSOT は `ssot-core` / `ssot-schema` / `ssot-policies` に細分化してよい。  
 ただし、**同じ target path を複数 repo で共有しない**ことを前提とする。
+また、`ssot-core` は `ssot-schema` / `ssot-policies` と同じ generic catalog として読まない。
 
 ```text
 ssot-core/
+  sets/
+    react-app/
+      set.yml
+    backend-app/
+      set.yml
   react-app/
-    set.yml
     AGENTS.md
     CLAUDE.md
     GEMINI.md
@@ -575,6 +581,8 @@ ssot-core/
       ...
     .github/copilot/
       ...
+  backend-app/
+    ...
 ssot-schema/
   agile/
     set.yml
@@ -595,31 +603,53 @@ ssot-policies/
 * 1 ファイルの一部だけを複数 repo から合成しない
 * 例: `40-testing-strategy.md` を `ssot-policies` が担当する場合、そのファイル全体を管理し、章単位の部分上書きは行わない
 
+## 16.1.2 `ssot-core` 専用ルール
+
+* `ssot-core` のセット定義は `sets/<set-name>/set.yml` に置く
+* target repo へ配る実体ファイルは `<set-name>/` 直下を完成物ルートとして置く
+* `ssot-core` のセットは部品集合ではなく、**1 つ選んだらそのまま配る完成物プロファイル**として扱う
+* `ssot-core` は **1 回の利用で 1 セットのみ**を選ぶ
+* `ssot-core` は controller 実装を知らなくても、repo を開けば何が配付完成物か分かる構造を優先する
+* `react-app/AGENTS.md` と `backend-app/AGENTS.md` のように、**代替セット配下に同名ファイルが存在すること自体は許容**する
+* `ssot-core` の差分は特殊ファイル名の追加ではなく、必要に応じて別セットとして表現する
+* この専用ルールは `ssot-core` にのみ適用し、`skills-*` / `mcp-*` / その他 catalog repo へ一般化しない
+
 ## 16.2 セット定義ファイル名
 
-* `set.yml`
+* `ssot-core` は `sets/<set-name>/set.yml`
+* `ssot-schema` / `ssot-policies` は `set.yml`
 
 ## 16.3 `set.yml` 構造
 
+`ssot-core` は generic な include list ではなく、**完成物ルートを指す定義**として扱う。
+
+```yaml
+version: 1
+distribution_root: ../../react-app
+```
+
+`ssot-schema` / `ssot-policies` は従来どおり include only / glob only とする。
+
 ```yaml
 include:
-  - AGENTS.md
-  - CLAUDE.md
-  - GEMINI.md
-  - .agent.md
-  - .github/copilot-instructions.md
-  - .cursor/rules/**
-  - docs/**
+  - .github/instructions/**
+  - .github/copilot/40-testing-strategy.md
+  - .github/copilot/50-security.md
 ```
 
 ## 16.4 include 基準
 
-* **`set.yml` からの相対パス**
+* `ssot-core` は `distribution_root` を **`set.yml` からの相対パス**で解決する
+* `ssot-core` の配付対象 path は、選択した `distribution_root` 配下を基準に読む
+* `ssot-schema` / `ssot-policies` の include は、従来どおり **`set.yml` からの相対パス**で解決する
 
 ## 16.5 コピー規則
 
-* include に列挙された path を、その**相対位置のまま** target repo に置く
-* ssot-sync-controller 側で path remap はしない
+* `ssot-core` は、選択した 1 セットの `distribution_root` **配下の中身を** target repo ルートへ展開する
+* したがって `react-app/AGENTS.md` は target repo の `AGENTS.md` として配置する
+* `ssot-core` では複数セット併用を前提にしないため、set 間 collision や後勝ち議論は不要とする
+* `ssot-schema` / `ssot-policies` は include に列挙された path を、その**相対位置のまま** target repo に置く
+* `ssot-schema` / `ssot-policies` では ssot-sync-controller 側で path remap はしない
 * `ssot-core` / `ssot-schema` / `ssot-policies` 間で同じ target path を共有しない
 
 ---
@@ -874,12 +904,14 @@ include:
 | 既存 PR             | 常に新規作成                                                   |
 | PR テンプレ           | `.github/PULL_REQUEST_TEMPLATE/ssot-sync.md`             |
 | BASE64 化          | ssot-sync-controller 責務                                             |
-| SSOT include 基準   | `set.yml` 相対                                             |
+| SSOT include 基準   | `ssot-core`: `distribution_root` を `set.yml` 相対で解決、`ssot-schema` / `ssot-policies`: `set.yml` 相対 |
+| `ssot-core` コピー先 | 選択した 1 セットの `distribution_root` 配下を target repo ルートへ展開 |
 | Skills include 基準 | catalog ルート基準                                            |
 | MCP include 基準    | catalog ルート基準                                            |
 | Skills / MCP コピー先 | catalog path をそのまま保持                                     |
 | AI 別入口 path          | `catalog-path-ownership-draft.md` を参照 |
 | SSOT 物理分割         | `ssot-core` / `ssot-schema` / `ssot-policies`（同一 path 共有禁止） |
+| `ssot-core` セット運用 | 1 回の利用で 1 セットのみ。差分は別セットで表現し、他 catalog へ一般化しない |
 | 共通入口ファイル責任者      | `ssot-core`                                               |
 | skills / provider / domain | 役割分割。ただし path / 権限境界を主基準とする                     |
 | MCP 物理分割          | `mcp-server-core` / `mcp-tools`                          |
