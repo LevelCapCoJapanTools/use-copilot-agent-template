@@ -562,7 +562,7 @@ chore(ssot): sync ssot-core@v1.2.3 [20260404-120001]
 
 SSOT は `ssot-core` / `ssot-schema` / `ssot-policies` に細分化してよい。  
 ただし、**同じ target path を複数 repo で共有しない**ことを前提とする。
-また、`ssot-core` は `ssot-schema` / `ssot-policies` と同じ generic catalog として読まない。
+また、`ssot-core` は `ssot-schema` / `ssot-policies` と同列の generic catalog ではなく、**完成物プロファイルを配る専用 catalog**として扱う。
 
 ```text
 ssot-core/
@@ -607,9 +607,9 @@ ssot-policies/
 
 * `ssot-core` のセット定義は `sets/<set-name>/set.yml` に置く
 * target repo へ配る実体ファイルは `<set-name>/` 直下を完成物ルートとして置く
-* `ssot-core` のセットは部品集合ではなく、**1 つ選んだらそのまま配る完成物プロファイル**として扱う
+* `ssot-core` のセットは部品集合ではなく、**選択したセットの配付物ルート配下を完全な形で配付する完成物プロファイル**として扱う
 * `ssot-core` は **1 回の利用で 1 セットのみ**を選ぶ
-* `ssot-core` は controller 実装を知らなくても、repo を開けば何が配付完成物か分かる構造を優先する
+* `ssot-core` は controller 実装を知らなくても、`<set-name>/` ディレクトリが配付完成物の構造を直接反映すると分かる構造を優先する
 * `react-app/AGENTS.md` と `backend-app/AGENTS.md` のように、**代替セット配下に同名ファイルが存在すること自体は許容**する
 * `ssot-core` の差分は特殊ファイル名の追加ではなく、必要に応じて別セットとして表現する
 * この専用ルールは `ssot-core` にのみ適用し、`skills-*` / `mcp-*` / その他 catalog repo へ一般化しない
@@ -621,12 +621,16 @@ ssot-policies/
 
 ## 16.3 `set.yml` 構造
 
+### 16.3.1 `ssot-core` の `set.yml`
+
 `ssot-core` は generic な include list ではなく、**完成物ルートを指す定義**として扱う。
 
 ```yaml
 version: 1
 distribution_root: ../../react-app
 ```
+
+### 16.3.2 `ssot-schema` / `ssot-policies` の `set.yml`
 
 `ssot-schema` / `ssot-policies` は従来どおり include only / glob only とする。
 
