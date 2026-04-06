@@ -556,34 +556,14 @@ chore(ssot): sync ssot-core@v1.2.3 [20260404-120001]
 
 ---
 
-# 16. SSOT catalog 設計
+# 16. 一般 SSOT catalog 設計
 
 ## 16.1 配置方針
 
 SSOT は `ssot-core` / `ssot-schema` / `ssot-policies` に細分化してよい。  
 ただし、**同じ target path を複数 repo で共有しない**ことを前提とする。
-また、`ssot-core` は `ssot-schema` / `ssot-policies` と同列の generic catalog ではなく、**選択した 1 セットを target repo へそのまま展開する専用 catalog**として扱う（詳細は 16.1.2 を参照）。
-本章でいう完成物プロファイルとは、project 全体の入口ファイルや `.github/` / `.cursor/` を含み、**target repo へ配置後に追加の path remap や merge を要さず AI agent が参照できる最終状態**を指す。
 
 ```text
-ssot-core/
-  sets/
-    react-app/
-      set.yml
-    backend-app/
-      set.yml
-  react-app/
-    AGENTS.md
-    CLAUDE.md
-    GEMINI.md
-    .agent.md
-    .github/copilot-instructions.md
-    .cursor/rules/
-      ...
-    .github/copilot/
-      ...
-  backend-app/
-    ...
 ssot-schema/
   agile/
     set.yml
@@ -597,7 +577,7 @@ ssot-policies/
       50-security.md
 ```
 
-`ssot-core` の `sets/<set-name>/set.yml` の書式は 16.3.1 に示す。
+`ssot-core` は本章の一般ルールとは別に、17 章の専用仕様として扱う。
 
 ## 16.1.1 責任分担
 
@@ -606,36 +586,13 @@ ssot-policies/
 * 1 ファイルの一部だけを複数 repo から合成しない
 * 例: `40-testing-strategy.md` を `ssot-policies` が担当する場合、そのファイル全体を管理し、章単位の部分上書きは行わない
 
-## 16.1.2 `ssot-core` 専用ルール
-
-* `ssot-core` のセット定義は `sets/<set-name>/set.yml` に置く
-* target repo へ配る実体ファイルは `<set-name>/` 直下を完成物ルートとして置く
-* 前述のとおり、`ssot-core` のセットは `ssot-schema` / `ssot-policies` のような include 列挙型の部品集合ではなく、**選択したセットの `distribution_root` 配下を完全な形で配付する完成物プロファイル**として扱う
-* `ssot-core` は **1 回の利用で 1 セットのみ**を選ぶ
-* `ssot-core` は controller 実装を知らなくても、`<set-name>/` ディレクトリが配付完成物の構造を直接反映すると分かる構造を優先する
-* `react-app/AGENTS.md` と `backend-app/AGENTS.md` のように、**代替セット配下に同名ファイルが存在すること自体は許容**する
-* `ssot-core` の差分は特殊ファイル名の追加ではなく、必要に応じて別セットとして表現する
-* この専用ルールは `ssot-core` にのみ適用し、`skills-*` / `mcp-*` / その他 catalog repo へ一般化しない
-
 ## 16.2 セット定義ファイル名
 
-* `ssot-core` は `sets/<set-name>/set.yml`
-* `ssot-schema` / `ssot-policies` は `set.yml`
+* `set.yml`
 
 ## 16.3 `set.yml` 構造
 
-### 16.3.1 `ssot-core` の `set.yml`
-
-`ssot-core` は generic な include list ではなく、**`distribution_root` で target repo への展開起点ディレクトリを示す定義**として扱う。
-
-```yaml
-version: 1
-distribution_root: ../../react-app
-```
-
-### 16.3.2 `ssot-schema` / `ssot-policies` の `set.yml`
-
-`ssot-schema` / `ssot-policies` は従来どおり include only / glob only とする。
+`ssot-schema` / `ssot-policies` は include only / glob only とする。
 
 ```yaml
 include:
@@ -646,25 +603,88 @@ include:
 
 ## 16.4 include 基準
 
-* `ssot-core` は `distribution_root` を **`set.yml` からの相対パス**で解決する
-* `ssot-core` の配付対象 path は、選択した `distribution_root` 配下を基準に読む
-* `ssot-schema` / `ssot-policies` の include は、従来どおり **`set.yml` からの相対パス**で解決する
+* **`set.yml` からの相対パス**
 
 ## 16.5 コピー規則
 
-* `ssot-core` は、選択した 1 セットの `distribution_root` が指すディレクトリ配下のファイル / ディレクトリ全体（`.` で始まるファイル / ディレクトリを含む）を、相対パスを保ったまま再帰的に target repo ルートへ展開する
-* たとえば `distribution_root: ../../react-app` の場合、`react-app/AGENTS.md` は target repo の `AGENTS.md` として配置する
-* 同じく `react-app/.github/copilot/00-index.md` は target repo の `.github/copilot/00-index.md` として配置する
-* `ssot-core` では複数セット併用を前提にしないため、set 間 collision や後勝ち議論は不要とする
-* `ssot-schema` / `ssot-policies` は include に列挙された path を、その**相対位置のまま** target repo に置く
-* `ssot-schema` / `ssot-policies` では ssot-sync-controller 側で path remap はしない
-* `ssot-core` / `ssot-schema` / `ssot-policies` 間で同じ target path を共有しない
+* include に列挙された path を、その**相対位置のまま** target repo に置く
+* ssot-sync-controller 側で path remap はしない
+* `ssot-schema` / `ssot-policies` 間で同じ target path を共有しない
 
 ---
 
-# 17. Skills catalog 設計
+# 17. `ssot-core` 専用仕様
 
-## 17.1 物理 repo 分割
+本章は `ssot-core` にのみ適用される特例仕様であり、`ssot-schema` / `ssot-policies` / `skills-*` / `mcp-*` には適用しない。
+
+## 17.1 基本原則
+
+* `ssot-core` の set は**配付単位の唯一の単位**とする
+* `ssot-core` の set は include 列挙型の部品集合ではなく、target repo へそのまま展開できる**完成物プロファイル**とする
+* ここでいう完成物プロファイルとは、project 全体の入口ファイルや `.github/` / `.cursor/` を含み、target repo へ配置後に追加の path remap や merge を要さず AI agent が参照できる最終状態を指す
+* `ssot-core` では複数 set の同時適用を禁止し、**必ず 1 set のみ**を選択する
+* `ssot-core` の配付は controller を必須とせず、単純なファイルコピーでも成立する構造とする
+
+## 17.2 固定ディレクトリ構造
+
+```text
+ssot-core/
+├── sets/
+│   └── <set-name>/
+│       └── set.yml
+├── <set-name>/
+│   ├── AGENTS.md
+│   ├── CLAUDE.md
+│   ├── GEMINI.md
+│   ├── .agent.md
+│   ├── .github/
+│   │   ├── copilot-instructions.md
+│   │   └── copilot/
+│   │       └── ...
+│   └── .cursor/
+│       └── rules/
+│           └── ...
+└── <another-set-name>/
+    └── ...
+```
+
+* `sets/<set-name>/set.yml` は set 定義の置き場である
+* `<set-name>/` 直下は target repo へ配る完成物そのものとする
+* `react-app/AGENTS.md` と `backend-app/AGENTS.md` のように、代替 set 配下に同名ファイルが存在すること自体は許容する
+
+## 17.3 `set.yml` の意味
+
+`ssot-core` の `set.yml` は include によるファイル列挙ではなく、**配付対象ディレクトリの完全コピー対象**を定義する。
+
+```yaml
+version: 1
+distribution_root: ../../react-app
+```
+
+* `distribution_root` は `set.yml` からの相対パスで解決する
+* `distribution_root` が指すディレクトリを、target repo への展開起点とする
+* `ssot-core` では set.yml の基準パスを set 定義ディレクトリではなく、`distribution_root` が指す配付対象ディレクトリとして解釈する
+
+## 17.4 コピー規則
+
+* 選択した 1 set の `distribution_root` が指すディレクトリ配下のファイル / ディレクトリ全体（`.` で始まるファイル / ディレクトリを含む）を、相対パスを保ったまま再帰的に target repo ルートへ展開する
+* たとえば `distribution_root: ../../react-app` の場合、`react-app/AGENTS.md` は target repo の `AGENTS.md` として配置する
+* 同じく `react-app/.github/copilot/00-index.md` は target repo の `.github/copilot/00-index.md` として配置する
+* `ssot-core` では複数 set を同時適用しないため、set 間 collision や後勝ち議論は不要とする
+* `ssot-core` の path ルールは catalog root 基準の一般ルールの例外であり、selected set の `distribution_root` 基準で target repo に展開する
+
+## 17.5 カスタマイズ方針
+
+* `ssot-core` のカスタマイズは target repo 側で独自入口ファイルを増やして表現しない
+* `AGENTS_カスタム.md` のような別名入口ファイルの追加は前提にしない
+* 差分が必要な場合は、set の派生として別 set を追加して表現する
+* 例: `react-app/`, `react-app-custom/`, `react-app-company-a/`
+
+---
+
+# 18. Skills catalog 設計
+
+## 18.1 物理 repo 分割
 
 * 出力先構造が異なる系統は、**物理的に catalog repo を分ける**
 * 例:
@@ -676,71 +696,13 @@ include:
 > ここで重要なのは、**ssot-sync-controller が AI 種別ごとに path remap しない**こと。
 > 出力先 path の違いは、catalog repo 側の構造で表現する。
 
-## 17.2 配置方針
+## 18.2 配置方針
 
 ```text
 skills-core/
   sets/
     frontend-ui.yml
     backend-php.yml
-  <managed paths>/
-    ...
-```
-
-## 17.3 セット定義形式
-
-* YAML
-* include のみ
-* glob のみ
-* セット依存なし
-
-## 17.4 include 基準
-
-* **catalog ルート基準**
-
-## 17.5 include 単位
-
-* **ディレクトリ単位コピー**
-
-例:
-
-```yaml
-include:
-  - .github/copilot/**
-  - .claude/agents/**
-```
-
-## 17.6 コピー規則
-
-* **catalog の path をそのまま保持して** target repo に置く
-* ssot-sync-controller は path remap しない
-
-## 17.7 Skills の責務境界
-
-* `skills-core` は汎用スキルを持つ
-* `skills-provider` は provider 固有の業務操作を持つ
-* `skills-domain` はアプリ固有の操作を持つ
-* `adapter-layer` は OS / shell / path 差分吸収に限定し、provider 固有の業務操作は持たない
-
----
-
-# 18. MCP catalog 設計
-
-## 18.1 物理 repo 分割
-
-* Skills と同様、出力先構造が異なる系統は物理 repo を分ける
-* 例:
-
-  * `mcp-server-core`
-  * `mcp-tools`
-
-## 18.2 配置方針
-
-```text
-mcp-tools/
-  sets/
-    basic.yml
-    full.yml
   <managed paths>/
     ...
 ```
@@ -764,8 +726,8 @@ mcp-tools/
 
 ```yaml
 include:
-  - .claude/mcp/**
-  - docs/mcp/**
+  - .github/copilot/**
+  - .claude/agents/**
 ```
 
 ## 18.6 コピー規則
@@ -773,7 +735,65 @@ include:
 * **catalog の path をそのまま保持して** target repo に置く
 * ssot-sync-controller は path remap しない
 
-## 18.7 補助 repo の扱い
+## 18.7 Skills の責務境界
+
+* `skills-core` は汎用スキルを持つ
+* `skills-provider` は provider 固有の業務操作を持つ
+* `skills-domain` はアプリ固有の操作を持つ
+* `adapter-layer` は OS / shell / path 差分吸収に限定し、provider 固有の業務操作は持たない
+
+---
+
+# 19. MCP catalog 設計
+
+## 19.1 物理 repo 分割
+
+* Skills と同様、出力先構造が異なる系統は物理 repo を分ける
+* 例:
+
+  * `mcp-server-core`
+  * `mcp-tools`
+
+## 19.2 配置方針
+
+```text
+mcp-tools/
+  sets/
+    basic.yml
+    full.yml
+  <managed paths>/
+    ...
+```
+
+## 19.3 セット定義形式
+
+* YAML
+* include のみ
+* glob のみ
+* セット依存なし
+
+## 19.4 include 基準
+
+* **catalog ルート基準**
+
+## 19.5 include 単位
+
+* **ディレクトリ単位コピー**
+
+例:
+
+```yaml
+include:
+  - .claude/mcp/**
+  - docs/mcp/**
+```
+
+## 19.6 コピー規則
+
+* **catalog の path をそのまま保持して** target repo に置く
+* ssot-sync-controller は path remap しない
+
+## 19.7 補助 repo の扱い
 
 * `infra-runtime` は非機密の runtime 定義、deploy 手順、IaC template だけを持つ
 * `infra-runtime` に secret 実値は含めない
@@ -783,46 +803,46 @@ include:
 
 ---
 
-# 19. カタログ品質と衝突方針
+# 20. カタログ品質と衝突方針
 
-## 19.1 原則
+## 20.1 原則
 
 * 衝突するようなカタログを作らない
 * これは**仕組みではなく規約**で担保する
 
-## 19.2 仕組み上の挙動
+## 20.2 仕組み上の挙動
 
 * 同一対象に複数入力が来た場合は **後勝ち**
 * ssot-sync-controller はそのままストリーム評価する
 * 衝突防止ロジックは持たない
 
-## 19.2.1 設計時の確認
+## 20.2.1 設計時の確認
 
 * 後勝ちは**例外時の逃げ道**であり、平常運用で前提にしない
 * Planner は DESIGN 時に、repo 間の内容相性を確認する
 * `skill-catalog` のような索引 repo は DESIGN 時だけ参照し、controller は実行時に参照しない
 
-## 19.2.2 path 担当の最小固定
+## 20.2.2 path 担当の最小固定
 
 * 入口ファイルや `.github/` 配下など、衝突しやすい path は先に担当 repo を固定する
 * 初期ドラフトは `catalog-path-ownership-draft.md` を参照する
 
-## 19.3 意味
+## 20.3 意味
 
 * ルール違反はカタログ側設計ミス
 * ssot-sync-controller 側は軽量・単純に保つ
 
 ---
 
-# 20. ロールバック戦略
+# 21. ロールバック戦略
 
-## 20.1 方針
+## 21.1 方針
 
 * **手動 rollback**
 * 自動 rollback はしない
 * 別専用コマンドも持たない
 
-## 20.2 手順
+## 21.2 手順
 
 1. 問題の PR を revert
 2. schedule を一時停止
@@ -832,7 +852,7 @@ include:
 
 ---
 
-# 21. GitHub App 権限
+# 22. GitHub App 権限
 
 会話で確定した採用権限は次の通り。
 
@@ -842,7 +862,7 @@ include:
 * `Secrets: Read`
 * `Metadata: Read`
 
-## 21.1 位置づけ
+## 22.1 位置づけ
 
 * `Contents RW` は branch / commit / push に必要
 * `Pull requests RW` は PR 作成に必要
@@ -850,14 +870,14 @@ include:
 * `Actions Read` は workflow / Actions 関連情報の参照余地として採用
 * `Metadata Read` は repo 情報取得のため必要
 
-## 21.2 `.github/workflows/**` を非対象にする意味
+## 22.2 `.github/workflows/**` を非対象にする意味
 
 * workflow files まで配付対象にすると、GitHub App 側で `Workflows` permission が必要になる
 * 本設計では `.github/workflows/**` を非対象とするため、workflow files 更新権限は要求しない
 
 ---
 
-# 22. 非対象
+# 23. 非対象
 
 * `.github/workflows/**` の配付
 * アプリケーションコード配付
@@ -871,7 +891,7 @@ include:
 
 ---
 
-# 23. ログ・監査
+# 24. ログ・監査
 
 * GitHub Actions ログ
 * PR 本文
@@ -881,7 +901,7 @@ include:
 
 ---
 
-# 24. 完全確定事項一覧（要約表）
+# 25. 完全確定事項一覧（要約表）
 
 | 項目                | 最終確定                                                     |
 | ----------------- | -------------------------------------------------------- |
@@ -892,7 +912,7 @@ include:
 | version           | 固定                                                       |
 | rollback          | 手動                                                       |
 | repo 設定           | `ssot-bot.yml` 最小構成                                      |
-| set 定義            | YAML / include only / glob only                          |
+| set 定義            | 一般 catalog: YAML / include only / glob only、`ssot-core`: `sets/<set-name>/set.yml` + `distribution_root` |
 | set 依存            | 禁止                                                       |
 | include 評価        | 上から順                                                     |
 | 重複                | dedupe                                                   |
@@ -914,6 +934,10 @@ include:
 | BASE64 化          | ssot-sync-controller 責務                                             |
 | SSOT include 基準   | `ssot-core`: `distribution_root` を `set.yml` からの相対パスで解決、`ssot-schema` / `ssot-policies`: `set.yml` からの相対パス |
 | `ssot-core` コピー先 | 選択した 1 セットの `distribution_root` 配下を target repo ルートへ展開 |
+| `ssot-core` 適用単位 | set = 配付単位の唯一の単位。複数 set 同時適用は禁止 |
+| `ssot-core` 構造 | `sets/<set-name>/set.yml` と `<set-name>/` 配付物ルートを分離 |
+| `ssot-core` 利用前提 | controller 必須ではなく、単純なファイルコピーでも成立 |
+| `ssot-core` カスタマイズ | target repo 側の別名入口ではなく、派生 set として表現 |
 | Skills include 基準 | catalog ルート基準                                            |
 | MCP include 基準    | catalog ルート基準                                            |
 | Skills / MCP コピー先 | catalog path をそのまま保持                                     |
